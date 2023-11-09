@@ -1,0 +1,368 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/examples/resources/layout.css" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.css" />
+    <link rel="stylesheet" href="https://unpkg.com/ol-popup@2.0.0/src/ol-popup.css">
+    <!-- ol-ext -->
+    <link rel="stylesheet" href="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.css" />
+    
+    <style id=theStyleElement>
+
+
+
+      .ol-dragbox {
+        border-color: blue;
+      }
+
+      .fullscreen:-moz-full-screen {
+        height: 100%;
+      }
+      .fullscreen:-webkit-full-screen {
+        height: 100%;
+      }
+      .fullscreen:-ms-fullscreen {
+        height: 100%;
+      }
+
+      .fullscreen:fullscreen {
+        height: 100%;
+      }
+
+      .html .body .map .fullscreen {
+        margin-bottom: 10px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .ol-rotate {
+        top: 3em;
+      }
+
+      .map {
+        width: 80%;
+        height: 100%;
+        float: left;
+      }
+
+      .sidepanel {
+        background: #1F6B75;
+        width: 20%;
+        height: 100%;
+        float: left;
+        padding: 10px;
+      }
+
+      .sidepanel-title {
+        width: 100%;
+        font-size: 1.5em;
+        color: #ffffff;
+        display: block;
+        text-align: left;
+      }
+
+      .sidepanel-subtitle {
+        width: 100%;
+        font-size: 1.1em;
+        color: #ffffff;
+        display: block;
+        text-align: left;
+      }
+
+      .sidepanel-buttons {
+        width: 100%;
+        padding: 10px;
+      }
+
+      .sidepanel-buttons.checked {
+        border-width: 3px;
+        border-color: black;
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .busy {
+        width: 100%;
+        height: 70px;
+        background-image: url('https://remix.run/loading.gif');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 45px;
+      }
+
+      .ol-attribution ul {
+        font-size: 0.8em;
+      }
+
+    </style>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.6.5/ol.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.js"></script>
+    <!-- filesaver-js -->
+    <script type="text/javascript" src="https://cdn.rawgit.com/eligrey/FileSaver.js/aa9f4e0e/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/ol-popup@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.2.1/proj4.js"></script>
+  </head>
+  <body>
+    <div id="fullscreen" class="fullscreen">
+      <div id="map" class="map"></div>
+      <div class="sidepanel">
+        <span class="sidepanel-title">Comune di Padova</span>
+        <span class="sidepanel-subtitle">Settore urbanistica e servizi catastali<br/></span>
+        <span class="sidepanel-subtitle">Rilievo 2023 - Estrazione di Nuvole di punti</span>
+        <span class="sidepanel-subtitle"></span>
+        <button class="sidepanel-buttons" id="seleziona" checked="">seleziona</button>
+        <div class="busy hidden" id="busy"></div>
+        <button class="sidepanel-buttons hidden" id="download">download point cloud (.laz)</button>
+        <button class="sidepanel-buttons hidden" id="modello">visualizza modello</button>
+      </div>
+    </div>
+
+
+    <script>
+
+      var UTM32Extent = [719459.961,5024860.053, 733523.921,5038269.875];
+      proj4.defs('EPSG:32632', '+proj=utm +zone=32 +datum=WGS84 +towgs84=128.8,17.85,0,0,0,0,0 +units=m +no_defs');
+      var UTM32proj = new ol.proj.Projection({
+          code: 'EPSG:32632',
+          extent: [166021.44, 0.0, 833978.56, 9329005.18]
+      });
+      ol.proj.addProjection(UTM32proj);
+    
+      console.log(UTM32proj.getExtent())
+      
+      var risposta
+      var tileSizePixels = 256;
+      var tileSizeMtrs = ol.extent.getWidth(UTM32proj.getExtent()) / tileSizePixels;
+      var matrixIds = [];
+      var resolutions = [];
+      for (var i = 0; i <= 14; i++) {
+        matrixIds[i] = i;
+        resolutions[i] = tileSizeMtrs / Math.pow(2, i);
+      }
+      var tileGrid = new ol.tilegrid.WMTS({
+        origin: ol.extent.getTopLeft(UTM32proj.getExtent()),
+        resolutions: resolutions,
+        matrixIds: matrixIds
+      });
+
+        var ETRS89Extent = [719459.961,5024860.053, 733523.921,5038269.875];
+        proj4.defs('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +towgs84=128.8,17.85,0,0,0,0,0 +units=m +no_defs');
+        var ETRS89proj = new ol.proj.Projection({
+            code: 'EPSG:25832',
+            extent: ETRS89Extent
+        });
+        ol.proj.addProjection(ETRS89proj);
+
+      var vview = new ol.View({
+        center: [725011, 5031711],
+        zoom: 3,
+        projection: UTM32proj,
+      });
+
+      var testFeats = new ol.Collection( 
+        [new ol.format.GeoJSON().readFeature(
+          { "type": "Feature", "properties": { "MINX": 724500.0, "MINY": 5032000.0, "MAXX": 726500.00000000012, "MAXY": 5034000.0, "CNTX": 725500.0, "CNTY": 5033000.0, "AREA": 4000000.0000002328, "PERIM": 8000.0000000002328, "HEIGHT": 2000.0, "WIDTH": 2000.0000000001164 }, "geometry": { "type": "Polygon", "coordinates": [ [ [ 11.868753441470135, 45.405484327716366 ], [ 11.894277616087054, 45.404839883751592 ], [ 11.895196943857895, 45.422819419069384 ], [ 11.869664689087072, 45.423464264945402 ], [ 11.868753441470135, 45.405484327716366 ] ] ] } },
+          {dataProjection:'EPSG:4326', featureProjection: UTM32proj},
+          
+          )]
+        )
+
+      var testOverlay = new ol.layer.Vector({
+        source: new ol.source.Vector({
+          features: testFeats,
+          projection: UTM32proj,
+        }),
+        title: 'contesto test',
+        visible: true,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#FFA500',
+            width: 3,
+          }),
+        }),
+      });
+
+      var selectionOverlay = new ol.layer.Vector({
+        source: new ol.source.Vector(),
+        title: 'selezione',
+        visible: true,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#0044FF',
+            width: 3,
+          }),
+        }),
+      });
+      
+      var osm = new ol.layer.Tile({
+        title: 'Openstreetmap',
+        source: new ol.source.OSM(),
+        visible: false,
+      })
+
+      var dragBox = new ol.interaction.DragBox({
+      })
+
+      dragBox.on('boxstart', function() {
+        selectionOverlay.getSource().clear()
+        document.getElementById("download").classList.add("hidden")
+        document.getElementById("modello").classList.add("hidden")
+      })
+
+      dragBox.on('boxdrag', function() {
+        const extent = dragBox.getGeometry().getExtent();
+        let area = Math.abs(extent[2]-extent[0])*Math.abs(extent[3]-extent[1])
+        if (area*20 > 1000000) {
+          document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] = 'red'
+        } else {
+          document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] = 'blue'
+        }
+        console.log(area*20)
+      })
+      
+      dragBox.on('boxend', function() {
+        // features that intersect the box are added to the collection of
+        // selected features
+        if (document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] == 'blue') {
+          const extent = dragBox.getGeometry().getExtent();
+          const feature = new ol.Feature({
+            geometry: dragBox.getGeometry(),
+            name: 'Selection',
+          });
+          selectionOverlay.getSource().addFeature(feature)
+          console.log(extent)
+          var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+          xmlhttp.open("POST", "/punti/");
+          xmlhttp.setRequestHeader("Content-Type", "application/json");
+          xmlhttp.onreadystatechange = function () {
+              console.log("RISPOSTA")
+              if (this.readyState == 4) {
+                //var blob = new Blob([this.response], { type: "application/octet-stream" });
+                //saveAs(blob, "filename.zip");
+                console.log(this.response)
+                risposta = JSON.parse(this.response)
+                if ( !risposta.error ) {
+                  document.getElementById("seleziona").click()
+                  document.getElementById("download").classList.remove("hidden")
+                  document.getElementById("modello").classList.remove("hidden")
+                } else {
+                  selectionOverlay.getSource().clear()
+                }
+                document.getElementById("busy").classList.add("hidden")
+              }
+          };
+        
+          document.getElementById("busy").classList.remove("hidden")
+          xmlhttp.send(JSON.stringify({extent:extent}));
+        }
+      });
+
+      var map = new ol.Map({
+        controls: ol.control.defaults().extend([
+            new ol.control.MousePosition(),
+        ]),
+        layers: [
+            osm,
+        ],
+        target: 'map',
+        view: vview
+      });
+
+      map.getView().fit(testOverlay.getSource().getExtent(), map.getSize());
+
+      map.addControl(new ol.control.LayerPopup())
+      
+      const parser = new ol.format.WMTSCapabilities();
+
+      fetch('http://s02.blomurbex.com/v02/WMTSService?usertoken=0ef1451624f1e268baf59b265c211f62&service=WMTS&request=GetCapabilities')
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (text) {
+        const capabilities = parser.read(text);
+        var ortofoto_2023_ortho = new ol.layer.Tile({
+          title: 'Ortofoto 2023',
+          visible: true,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'BlomURBEX:ORTHO',
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        ortofoto_2023_ortho.getSource().setAttributions(["2023 Comune di Padova - Settore Urbanistica e servizi catastali"])        
+
+        var ortofoto_2023_east= new ol.layer.Tile({
+          title: 'Ortofoto 2023 east',
+          visible: false,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'BlomURBEX:EAST',
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        var ortofoto_2023_north= new ol.layer.Tile({
+          title: 'Ortofoto 2023 north',
+          visible: false,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'BlomURBEX:NORTH',
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        var ortofoto_2023_south= new ol.layer.Tile({
+          title: 'Ortofoto 2023 south',
+          visible: false,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'BlomURBEX:SOUTH',
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        var ortofoto_2023_west= new ol.layer.Tile({
+          title: 'Ortofoto 2023 west',
+          visible: false,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'BlomURBEX:WEST',
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        map.addLayer(ortofoto_2023_ortho)
+        map.addLayer(ortofoto_2023_north)
+        map.addLayer(ortofoto_2023_east)
+        map.addLayer(ortofoto_2023_south)
+        map.addLayer(ortofoto_2023_west)
+        map.addLayer(testOverlay)
+        map.addLayer(selectionOverlay)
+
+      });
+
+      document.getElementById("seleziona").addEventListener('click', function() {
+        console.log('Button clicked');
+        
+        if ( document.getElementById("seleziona").classList.contains("checked")) {
+            map.removeInteraction(dragBox)
+            document.getElementById("seleziona").classList.remove("checked");
+        } else {
+            map.addInteraction(dragBox)
+            document.getElementById("seleziona").classList.add("checked");
+        }
+      });
+      
+      document.getElementById("download").addEventListener('click', function() {
+        window.open(risposta.output_laz, '_blank');
+      });
+      
+      document.getElementById("modello").addEventListener('click', function() {
+        window.open(risposta.output_dir+"/model/index.html", '_blank');
+      });
+    </script>
+    
+    
+  </body>
+</html>

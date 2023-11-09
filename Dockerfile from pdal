@@ -1,0 +1,43 @@
+FROM pdal/pdal:latest
+ENV PYTHONDONTWRITEBYTECODE=1
+ENV PYTHONUNBUFFERED=1
+ENV HTTPS_PROXY=http://172.20.0.252:3128
+ENV HTTP_PROXY=http://172.20.0.252:3128
+ARG DEBIAN_FRONTEND=noninteractive
+ENV TZ=Etc/UTC
+RUN apt-get update && \
+    apt-get install -y tzdata && \
+    apt-get -y install software-properties-common git && \
+    apt-get -y install build-essential cmake g++ && \
+    apt-get -y install libboost-all-dev && \
+    apt-get -y install cmake-curses-gui && \
+    apt-get -y install gcc && \
+    apt-get -y install libtbb-dev && \
+    apt-get -y install git && \
+    apt-get -y install wget unzip
+RUN git config --global http.proxy http://172.20.0.252:3128
+RUN git config --global https.proxy http://172.20.0.252:3128
+
+RUN conda install -y django
+RUN conda install -y gunicorn
+RUN conda install -y gdal
+
+RUN apt-get install -y \
+    libtiff-dev libgeotiff-dev libgdal-dev \
+    libboost-system-dev libboost-thread-dev libboost-filesystem-dev libboost-program-options-dev libboost-regex-dev libboost-iostreams-dev libtbb-dev
+WORKDIR /opt
+RUN git clone https://github.com/m-schuetz/LAStools.git && cd LAStools/LASzip && mkdir build && cd build && \
+cmake -DCMAKE_BUILD_TYPE=Release .. && make && make install && ldconfig
+
+RUN apt-get -y install glibc-source libc6
+
+#RUN add-apt-repository ppa:ubuntu-toolchain-r/test
+
+WORKDIR /
+RUN wget https://github.com/potree/PotreeConverter/releases/download/2.1.1/PotreeConverter_2.1.1_x64_linux.zip
+RUN unzip PotreeConverter_2.1.1_x64_linux.zip
+RUN rm PotreeConverter_2.1.1_x64_linux.zip
+RUN chmod u+x /PotreeConverter_linux_x64/*
+
+WORKDIR /app
+EXPOSE 8008
