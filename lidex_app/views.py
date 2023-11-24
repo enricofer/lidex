@@ -3,7 +3,7 @@ from django.views.decorators.csrf import csrf_exempt
 from django.http import HttpResponseRedirect,JsonResponse,HttpResponse, FileResponse, HttpResponseServerError
 from django.urls import reverse
 from django.template.loader import render_to_string, get_template
-from django.contrib.gis.geos import GEOSGeometry, MultiPolygon, MultiLineString
+from django.contrib.gis.geos import GEOSGeometry, Polygon
 from django.conf import settings
 
 import json
@@ -63,15 +63,12 @@ def punti(request):
   if request.method == 'POST':
     print(request.body)
     json_data = json.loads(request.body) # request.raw_post_data w/ Django < 1.4
-    try:
-      extent = json_data['extent']
-      print (extent)
-    except KeyError:
-      #HttpResponseServerError("Malformed data!")
-      return JsonResponse({
-        "result": None,
-        "error": "Malformed extent!",
-      })
+    extent = json_data.get('extent')
+    wktgeom = json_data.get('geom')
+    if wktgeom:
+       geom = GEOSGeometry(wktgeom)
+       print("closed poligon?",geom[0][0],geom[0][-1])
+
     output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
     os.makedirs(output_dir)
     output_laz = os.path.join(output_dir,"estratto.laz")
@@ -80,6 +77,7 @@ def punti(request):
       settings.PDAL_COVERAGE_INDEX_PATH, 
       output_laz, 
       bounds=extent, 
+      polygon= wktgeom,
       t_srs= settings.PDAL_COVERAGE_INDEX_SRS,
       ogrdriver= settings.PDAL_COVERAGE_INDEX_FORMAT,
       lyr_name= settings.PDAL_COVERAGE_INDEX_LAYER
@@ -94,6 +92,7 @@ def punti(request):
         "result": res,
         "error": None,
         "extent": extent,
+        "polygon": wktgeom,
         "info": json.loads(pdal_info(output_laz)),
         "remote": get_client_ip(request),
         "time": datetime.now().isoformat(),

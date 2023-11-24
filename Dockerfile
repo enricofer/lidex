@@ -54,6 +54,6 @@ ENV PROJ_LIB=/opt/conda/share/proj
 
 WORKDIR /app
 
-RUN /opt/conda/bin/python manage.py collectstatic
+#RUN /opt/conda/bin/python manage.py collectstatic
 
 EXPOSE 8008

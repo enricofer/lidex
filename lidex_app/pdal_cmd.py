@@ -79,9 +79,11 @@ def pdal_info(las):
 
 def pdal_tindex_merge(index, output, bounds=None, polygon=None, t_srs=None, ogrdriver=None, lyr_name=None):
     if bounds:
-        polygon = extentToPolygon(bounds)
+        polygon = extentToPolygon(bounds).wkt
+    elif not polygon:
+        PDALException('definire o polygon o bounds')
     
-    args = ["tindex", "merge", '--polygon', '"%s"' % polygon.wkt]
+    args = ["tindex", "merge", '--polygon', '"%s"' % polygon]
 
     if ogrdriver:
         args = args + ['--ogrdriver', '"%s"' % ogrdriver]
