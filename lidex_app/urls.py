@@ -15,11 +15,13 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path
-from views import globmap, punti
+from django.urls import path, re_path
+from views import globmap, punti, raster_sample, raster_profilo
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('map/',globmap),
-    path('punti/',punti),
+    path('map/', globmap),
+    path('punti/', punti),
+    re_path('^raster/(dtm|dsm)/$', raster_sample, name="raster_sample"),
+    re_path('^profilo/(dtm|dsm)/$', raster_profilo, name="raster_profilo"),
 ]

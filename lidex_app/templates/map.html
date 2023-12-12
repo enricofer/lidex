@@ -53,6 +53,8 @@
         height: 100%;
         float: left;
         padding: 10px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
       }
 
       .sidepanel-title {
@@ -94,7 +96,22 @@
       }
 
       .ol-attribution ul {
-        font-size: 0.8em;
+        font-size: 0.6em;
+      }
+
+      #profili_panel {
+        width: 100%;
+        min-height: 400px;
+        font-size: 10px !important;
+        background-color: beige;
+        margin-top: 10px;
+      }
+
+      footer {
+      }
+
+      #opt1 ,#opt2 ~ *  {
+        font-size: 10px !important;
       }
 
     </style>
@@ -110,16 +127,34 @@
     <div id="fullscreen" class="fullscreen">
       <div id="map" class="map"></div>
       <div class="sidepanel">
-        <span class="sidepanel-title">Comune di Padova</span>
-        <span class="sidepanel-subtitle">Settore urbanistica e servizi catastali<br/></span>
-        <span class="sidepanel-subtitle">Rilievo 2023 - Estrazione di Nuvole di punti</span>
-        <span class="sidepanel-subtitle"></span>
-        <button class="sidepanel-buttons" id="seleziona_b" checked="">seleziona finestra</button>
-        <button class="sidepanel-buttons" id="seleziona_p" checked="">seleziona poligono</button>
-        <div class="busy hidden" id="busy"></div>
-        <json-viewer id="view"></json-viewer>
-        <button class="sidepanel-buttons hidden" id="download">download point cloud (.laz)</button>
-        <button class="sidepanel-buttons hidden" id="modello">visualizza modello</button>
+        <header>
+          <span class="sidepanel-title">Comune di Padova</span>
+          <span class="sidepanel-subtitle">Settore urbanistica e servizi catastali<br/></span>
+          <span class="sidepanel-subtitle">Rilievo 2023 - DTM - DSM - LIDAR</span>
+          <span class="sidepanel-subtitle"></span>
+          <button class="sidepanel-buttons" id="disegna_profilo" checked="">Profili da DTM - DSM</button>
+          <button class="sidepanel-buttons" id="seleziona_b" checked="">Point cloud da finestra</button>
+          <button class="sidepanel-buttons" id="seleziona_p" checked="">Point cloud da poligono</button>
+        </header>
+        <article>
+          <div class="busy hidden" id="busy"></div>
+          <button class="sidepanel-buttons hidden" id="placeholder">placeholder</button>
+        </article>
+        <footer>
+          <div class="" id="risultati">
+            <button class="sidepanel-buttons hidden" id="download_profilo">Download profilo DXF</button>
+            <json-viewer id="view"></json-viewer>
+            <button class="sidepanel-buttons hidden" id="download">Download point cloud (.laz)</button>
+            <button class="sidepanel-buttons hidden" id="modello">Visualizza modello</button>
+            <button class="sidepanel-buttons hidden" id="licenza">Licenza d'uso CC BY 4.0 Deed</button>
+          </div>
+          <div id="profili_panel" class="profili hidden">
+            <div id="opt1" class="options">
+            </div>
+            <div id="opt2" class="options">
+            </div>
+          </div>
+        </footer>
       </div>
     </div>
 
@@ -198,6 +233,12 @@
           }),
           fill: new ol.style.Fill({
             color: 'rgba(255, 255, 255, 0.2)'
+          }),
+          image: new ol.style.Circle({
+            radius: 4,
+            fill: new ol.style.Fill({
+              color: '#0044FF'
+            })
           })
         }),
       });
@@ -254,6 +295,9 @@
                   document.getElementById("seleziona_b").click()
                   document.getElementById("download").classList.remove("hidden")
                   document.getElementById("modello").classList.remove("hidden")
+                  document.getElementById("licenza").classList.remove("hidden")
+                  document.getElementById("view").classList.remove("hidden");
+                  document.querySelector('#view').data = {info:risposta.info}
                 } else {
                   selectionOverlay.getSource().clear()
                 }
@@ -265,7 +309,6 @@
           xmlhttp.send(JSON.stringify({extent:extent,geom:undefined}));
         }
       });
-
 
       var selectionColor = 'blue'
 
@@ -357,6 +400,8 @@
                   document.getElementById("seleziona_p").click()
                   document.getElementById("download").classList.remove("hidden")
                   document.getElementById("modello").classList.remove("hidden")
+                  document.getElementById("licenza").classList.remove("hidden")
+                  document.getElementById("view").classList.remove("hidden");
                   document.querySelector('#view').data = {info:risposta.info}
 
                 } else {
@@ -370,6 +415,74 @@
           xmlhttp.send(JSON.stringify({extent:undefined,geom:wktgeom}));
         }
       });
+
+      var drawLine = new ol.interaction.Draw({
+        //source: selectionOverlay,
+        type: 'LineString',
+        maxPoints: 2,
+        style: function styleFunction (feature) {
+          return new ol.style.Style({
+              stroke: new ol.style.Stroke({
+                color: selectionColor,
+                width: 5
+              })
+          })
+        },
+      })
+
+      drawLine.on('drawstart', function() {
+        selectionOverlay.getSource().clear()
+        document.getElementById("download_profilo").classList.add("hidden")
+      })
+
+      drawLine.on('drawend', function(event) {
+        let geom = event.feature.getGeometry()
+        let coords = geom.getCoordinates()
+        console.log(coords)
+        var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+        xmlhttp.open("POST", "/profilo/dtm/");
+        xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.onreadystatechange = function () {
+            console.log("RISPOSTA")
+            if (this.readyState == 4) {
+              //var blob = new Blob([this.response], { type: "application/octet-stream" });
+              //saveAs(blob, "filename.zip");
+              console.log(this.response)
+              risposta = JSON.parse(this.response)
+              if ( !risposta.error ) {
+                document.getElementById("disegna_profilo").click()
+                document.getElementById("download_profilo").classList.remove("hidden")
+                document.getElementById("profili_panel").classList.remove("hidden")
+                document.getElementById("licenza").classList.remove("hidden")
+
+                window.selectionOverlay.getSource().clear()
+                let converter = new ol.format.WKT()
+                let dtmfeat = converter.readFeature(risposta.output.dtm.wkt)
+                let dsmfeat = converter.readFeature(risposta.output.dsm.wkt)
+                feature = dtmfeat
+                window.selectionOverlay.getSource().addFeature(dtmfeat)
+                profil.setGeometry(dtmfeat, {
+                  graduation:50,
+                  zmin:0
+                });
+                profil2.setGeometry(dsmfeat, {
+                  graduation:50,
+                  zmin:0
+                });
+                pt = new ol.Feature(new ol.geom.Point([0,0]));
+                pt.setStyle([]);
+                window.selectionOverlay.getSource().addFeature(pt);
+              } else {
+                selectionOverlay.getSource().clear()
+              }
+              document.getElementById("busy").classList.add("hidden")
+            }
+        };
+      
+        document.getElementById("busy").classList.remove("hidden")
+        xmlhttp.send(JSON.stringify({line:coords}));
+
+      })
 
       var map = new ol.Map({
         controls: ol.control.defaults().extend([
@@ -385,7 +498,78 @@
       map.getView().fit(testOverlay.getSource().getExtent(), map.getSize());
 
       map.addControl(new ol.control.LayerPopup())
-      
+
+      var profil = new ol.control.Profil({
+        target: document.getElementById("opt1"),
+        selectable: true,
+        zoomable: true,
+        style: new ol.style.Style({
+          fill: new ol.style.Fill({ color: '#ccc' })
+        }),
+        title:"DTM",
+        width:300, height:150
+      });
+
+      var profil2 = new ol.control.Profil({
+        target: document.getElementById("opt2"),
+        selectable: true,
+        zoomable: true,
+        style: new ol.style.Style({
+          fill: new ol.style.Fill({ color: '#ccc' })
+        }),
+        title:"DSM",
+        width:300, height:150
+      });
+
+      map.addControl(profil);
+      map.addControl(profil2);
+      var pt, feature
+      // Draw a point on the map when mouse fly over profil
+      function drawPoint(e) {
+          if (!pt) return;
+          if (e.type=="over"){
+            // Show point at coord
+            pt.setGeometry(new ol.geom.Point(e.coord));
+            pt.setStyle(null);
+          } else {
+            // hide point
+            pt.setStyle([]);
+          }
+        };
+        // Show a popup on over
+        profil.on(["over","out"], function(e) {
+          if (e.type=="over") profil.popup(e.coord[2]+" m");
+          drawPoint(e);
+          profil2.showAt(e.distance)
+        });
+        profil2.on(["over","out"], function(e) {
+          if (e.type=="over") profil.popup(e.coord[2]+" m");
+          drawPoint(e);
+          profil.showAt(e.distance)
+        });
+
+        var hover = new ol.interaction.Hover({ 
+          cursor: "pointer", 
+          hitTolerance:10,
+          layers:[selectionOverlay]
+        });
+        map.addInteraction(hover);
+        hover.on("hover", function(e) {
+          // Point on the line
+          var c = feature.getGeometry().getClosestPoint(e.coordinate)
+          drawPoint({ type: "over", coord: c });
+          // Show profil
+          var p = profil.showAt(e.coordinate);
+          profil.popup(p[2]+" m");
+          profil2.showAt(e.coordinate);
+        });
+        hover.on("leave", function(e) {
+          profil.popup();
+          profil.showAt();
+          profil2.showAt();
+          drawPoint({});
+        });
+
       const parser = new ol.format.WMTSCapabilities();
 
       fetch('http://s02.blomurbex.com/v02/WMTSService?usertoken=0ef1451624f1e268baf59b265c211f62&service=WMTS&request=GetCapabilities')
@@ -402,9 +586,7 @@
             layer: 'BlomURBEX:ORTHO',
             matrixSet: 'EPSG:32632',
           }))
-        })
-
-        ortofoto_2023_ortho.getSource().setAttributions(["2023 Comune di Padova - Settore Urbanistica e servizi catastali"])        
+        })       
 
         var ortofoto_2023_east= new ol.layer.Tile({
           title: 'Ortofoto 2023 east',
@@ -446,6 +628,13 @@
           }))
         })
 
+        let attrib = ['<a href="https://creativecommons.org/licenses/by/4.0/deed.it" target="_blank">2023 Comune di Padova - Settore Urbanistica e servizi catastali</a>']
+        ortofoto_2023_ortho.getSource().setAttributions(attrib) 
+        ortofoto_2023_north.getSource().setAttributions(attrib)
+        ortofoto_2023_east.getSource().setAttributions(attrib)
+        ortofoto_2023_south.getSource().setAttributions(attrib)
+        ortofoto_2023_west.getSource().setAttributions(attrib)
+
         map.addLayer(ortofoto_2023_ortho)
         map.addLayer(ortofoto_2023_north)
         map.addLayer(ortofoto_2023_east)
@@ -459,7 +648,13 @@
       document.getElementById("seleziona_b").addEventListener('click', function() {
         console.log('Button clicked');
         map.removeInteraction(drawPolygon)
+        map.removeInteraction(drawLine)
         document.getElementById("seleziona_p").classList.remove("checked");
+        document.getElementById("disegna_profilo").classList.remove("checked");
+        document.getElementById("download_profilo").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("profili_panel").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
         if ( document.getElementById("seleziona_b").classList.contains("checked")) {
             map.removeInteraction(dragBox)
             document.getElementById("seleziona_b").classList.remove("checked");
@@ -472,13 +667,38 @@
       document.getElementById("seleziona_p").addEventListener('click', function() {
         console.log('Button clicked');
         map.removeInteraction(dragBox)
+        map.removeInteraction(drawLine)
         document.getElementById("seleziona_b").classList.remove("checked");
+        document.getElementById("disegna_profilo").classList.remove("checked");
+        document.getElementById("download_profilo").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("profili_panel").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
         if ( document.getElementById("seleziona_p").classList.contains("checked")) {
             map.removeInteraction(drawPolygon)
             document.getElementById("seleziona_p").classList.remove("checked");
         } else {
             map.addInteraction(drawPolygon)
             document.getElementById("seleziona_p").classList.add("checked");
+        }
+      });
+
+      document.getElementById("disegna_profilo").addEventListener('click', function() {
+        console.log('Button clicked');
+        map.removeInteraction(dragBox)
+        map.removeInteraction(drawPolygon)
+        document.getElementById("seleziona_p").classList.remove("checked");
+        document.getElementById("seleziona_b").classList.remove("checked");
+        document.getElementById("download").classList.add("hidden");
+        document.getElementById("modello").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
+        if ( document.getElementById("disegna_profilo").classList.contains("checked")) {
+            map.removeInteraction(drawLine)
+            document.getElementById("disegna_profilo").classList.remove("checked");
+        } else {
+            map.addInteraction(drawLine)
+            document.getElementById("disegna_profilo").classList.add("checked");
         }
       });
       
@@ -488,6 +708,14 @@
       
       document.getElementById("modello").addEventListener('click', function() {
         window.open(risposta.output_dir+"/model/index.html", '_blank');
+      });
+      
+      document.getElementById("download_profilo").addEventListener('click', function() {
+        window.open(risposta.dxf, '_blank');
+      });
+      
+      document.getElementById("licenza").addEventListener('click', function() {
+        window.open('https://creativecommons.org/licenses/by/4.0/deed.it', '_blank');
       });
     </script>
     

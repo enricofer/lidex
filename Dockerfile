@@ -50,6 +50,8 @@ RUN conda install gdal
 RUN conda install pdal
 RUN conda install python
 RUN conda install django
+RUN conda install affine
+RUN conda install ezdxf
 ENV PROJ_LIB=/opt/conda/share/proj
 
 WORKDIR /app

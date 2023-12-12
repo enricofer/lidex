@@ -13,6 +13,18 @@ import os
 from pathlib import Path
 import shutil
 from datetime import datetime
+import struct
+import math
+
+from osgeo import gdal,osr
+from affine import Affine
+
+import ezdxf
+
+dxfcols = {
+   "dtm": 1,
+   "dsm": 3
+}
 
 from pdal_cmd import pdal_tindex_merge, potreeConvert, pdal_info
 
@@ -53,6 +65,102 @@ def get_client_ip(request):
         if len(proxies) > 0:
             ip = proxies[0]
     return ip
+
+def extract_point_from_raster(data_source, p, band_number=1):
+    """Return floating-point value that corresponds to given point."""
+
+    # Convert point co-ordinates so that they are in same projection as raster
+    #point_sr = point.GetSpatialReference()
+    #raster_sr = osr.SpatialReference()
+    #raster_sr.ImportFromWkt(data_source.GetProjection())
+    #transform = osr.CoordinateTransformation(point_sr, raster_sr)
+    #point.Transform(transform)
+
+    # Convert geographic co-ordinates to pixel co-ordinates
+    #x, y = point.GetX(), point.GetY()
+    x, y  = p
+    forward_transform = Affine.from_gdal(*data_source.GetGeoTransform())
+    reverse_transform = ~forward_transform
+    px, py = reverse_transform * (x, y)
+    px, py = int(px + 0.5), int(py + 0.5)
+
+    # Extract pixel value
+    band = data_source.GetRasterBand(band_number)
+    structval = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
+    result = struct.unpack('f', structval)[0]
+    if result == band.GetNoDataValue():
+        result = float('nan')
+    return result
+
+@csrf_exempt
+def raster_sample(request,supporto):
+  if request.method == 'POST':
+    json_data = json.loads(request.body)
+    p = json_data.get('sample')
+    if p:
+       ds = gdal.Open("/coverage/%s.tif" % supporto)
+       res = extract_point_from_raster(ds,p)
+       return JsonResponse({"result": res})
+    
+@csrf_exempt
+def raster_profilo(request,supporto):
+
+  def dist(p0,p1):
+     return math.sqrt((p1[0]-p0[0])**2 + (p1[1]-p0[1])**2 )
+
+  if request.method == 'POST':
+    json_data = json.loads(request.body)
+    l = json_data.get('line')
+    if l:
+      p0 = l[0]
+      p1 = l[1]
+      a = math.atan2(p1[1]-p0[1], p1[0]-p0[0])
+      stepx = 0.5 * math.cos(a)
+      stepy = 0.5 * math.sin(a)
+      print (a,stepx,stepy)
+      dxfdoc = ezdxf.new()
+      msp = dxfdoc.modelspace()
+
+      output = {
+         "dtm": {},
+         "dsm": {}
+      }
+
+      for supporto in output.keys():
+        ds = gdal.Open("/coverage/%s.tif" % supporto)
+        sample = p0
+        m = 0
+        output[supporto]["wkt"] = "LINESTRING ZM ( "
+        output[supporto]["xyz"] = []
+        dxfdoc.layers.add(name=supporto, color=dxfcols[supporto])
+        dxfpoints = []
+
+        while ( dist(sample, p1) > 0.5 ):
+          res = extract_point_from_raster(ds,sample)
+          output[supporto]["xyz"].append([sample[0], sample[1], res])
+          output[supporto]["wkt"] += "%f %f %f %f, " % (sample[0], sample[1], res, m)
+          dxfpoints.append([m,res])
+          sample = [sample[0]+stepx, sample[1]+stepy]
+          m += 0.5
+
+        res = extract_point_from_raster(ds,p1)
+        output[supporto]["xyz"].append([p1[0], p1[1], res])
+        d = dist(p0, p1)
+        output[supporto]["wkt"] += "%f %f %f %f )" % (sample[0], sample[1], res, d)
+        dxfpoints.append([d,res])
+        msp.add_lwpolyline(dxfpoints, dxfattribs={"layer": supporto})
+
+      output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
+      dxffile = os.path.join(output_dir,"profile.dxf")
+      os.makedirs(output_dir)
+      dxfdoc.saveas(dxffile)
+
+      return JsonResponse({
+         "profile": l,
+         "dxf": dxffile,
+         "output": output,
+      })
+
 
 def globmap(request):
     return render(request, 'map.html', {})
