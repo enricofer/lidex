@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from views import globmap, punti, raster_sample, raster_profilo
+from views import globmap, punti, raster_sample, raster_profilo, raster_clip
 
 urlpatterns = [
     path('admin/', admin.site.urls),
@@ -24,4 +24,5 @@ urlpatterns = [
     path('punti/', punti),
     re_path('^raster/(dtm|dsm)/$', raster_sample, name="raster_sample"),
     re_path('^profilo/(dtm|dsm)/$', raster_profilo, name="raster_profilo"),
+    re_path('^clip/$', raster_clip, name="raster_clip"),
 ]
