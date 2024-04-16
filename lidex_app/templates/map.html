@@ -107,9 +107,6 @@
         margin-top: 10px;
       }
 
-      footer {
-      }
-
       #opt1 ,#opt2 ~ *  {
         font-size: 10px !important;
       }
@@ -286,7 +283,7 @@
           selectionOverlay.getSource().addFeature(feature)
           console.log(extent)
           var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
-          xmlhttp.open("POST", "/punti/");
+          xmlhttp.open("POST", "/lidex/punti/");
           xmlhttp.setRequestHeader("Content-Type", "application/json");
           xmlhttp.onreadystatechange = function () {
               console.log("RISPOSTA")
@@ -393,7 +390,7 @@
           pFeat = new ol.Feature(pgeom)
           window.selectionOverlay.getSource().addFeature(pFeat)
           var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
-          xmlhttp.open("POST", "/punti/");
+          xmlhttp.open("POST", "/lidex/punti/");
           xmlhttp.setRequestHeader("Content-Type", "application/json");
           xmlhttp.onreadystatechange = function () {
               console.log("RISPOSTA")
@@ -446,7 +443,7 @@
         let coords = geom.getCoordinates()
         console.log(coords)
         var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
-        xmlhttp.open("POST", "/profilo/dtm/");
+        xmlhttp.open("POST", "/lidex/profilo/dtm/");
         xmlhttp.setRequestHeader("Content-Type", "application/json");
         xmlhttp.onreadystatechange = function () {
             console.log("RISPOSTA")
@@ -579,7 +576,7 @@
 
       const parser = new ol.format.WMTSCapabilities();
 
-      fetch('http://s02.blomurbex.com/v02/WMTSService?usertoken=0ef1451624f1e268baf59b265c211f62&service=WMTS&request=GetCapabilities')
+      fetch('https://s02.blomurbex.com/v02/WMTSService?usertoken=0ef1451624f1e268baf59b265c211f62&service=WMTS&request=GetCapabilities')
       .then(function (response) {
         return response.text();
       })

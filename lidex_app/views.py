@@ -219,9 +219,11 @@ def raster_profilo(request,supporto):
       os.makedirs(output_dir)
       dxfdoc.saveas(dxffile)
 
+      print ("output", output)
+
       return JsonResponse({
          "profile": l,
-         "dxf": dxffile,
+         "dxf": "/lidex"+dxffile,
          "output": output,
       })
 
@@ -268,8 +270,8 @@ def punti(request):
         "info": json.loads(pdal_info(output_laz)),
         "remote": get_client_ip(request),
         "time": datetime.now().isoformat(),
-        "output_dir": output_dir,
-        "output_laz": output_laz,
+        "output_dir": "/lidex"+output_dir,
+        "output_laz": "/lidex"+output_laz,
       }
 
       with open(os.path.join(output_dir,"metadata.json"), "w") as outf:

@@ -19,10 +19,10 @@ from django.urls import path, re_path
 from views import globmap, punti, raster_sample, raster_profilo, raster_clip
 
 urlpatterns = [
-    path('admin/', admin.site.urls),
-    path('map/', globmap),
-    path('punti/', punti),
-    re_path('^raster/(dtm|dsm)/$', raster_sample, name="raster_sample"),
-    re_path('^profilo/(dtm|dsm)/$', raster_profilo, name="raster_profilo"),
-    re_path('^clip/$', raster_clip, name="raster_clip"),
+    path('lidex/admin/', admin.site.urls),
+    path('lidex/map/', globmap),
+    path('lidex/punti/', punti),
+    re_path('^lidex/raster/(dtm|dsm)/$', raster_sample, name="raster_sample"),
+    re_path('^lidex/profilo/(dtm|dsm)/$', raster_profilo, name="raster_profilo"),
+    re_path('^lidex/clip/$', raster_clip, name="raster_clip"),
 ]
