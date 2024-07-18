@@ -37,11 +37,13 @@ INSTALLED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    "corsheaders",
 ]
 
 MIDDLEWARE = [
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
+    "corsheaders.middleware.CorsMiddleware",
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
     'django.contrib.auth.middleware.AuthenticationMiddleware',
@@ -129,3 +131,5 @@ PDAL_COVERAGE_INDEX_FORMAT = "SQLite"
 PDAL_COVERAGE_INDEX_LAYER = "pdal"
 PDAL_COVERAGE_INDEX_SRS = "EPSG:25832"
 PDAL_OUTPUT_DIR = "/output"
+
+CORS_ALLOW_ALL_ORIGINS = True

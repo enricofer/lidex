@@ -52,6 +52,7 @@ RUN conda install python
 RUN conda install django
 RUN conda install affine
 RUN conda install ezdxf
+RUN conda install django-cors-headers
 ENV PROJ_LIB=/opt/conda/share/proj
 
 WORKDIR /app

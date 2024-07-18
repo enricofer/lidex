@@ -167,6 +167,13 @@ def raster_sample(request,supporto):
        return JsonResponse({"result": res})
     
 @csrf_exempt
+def output_file(request,dir,file):
+   dpath = os.path.join(settings.PDAL_OUTPUT_DIR,dir,file)
+   if os.path.exists(dpath):
+      with open(dpath,'rb') as dfile:
+         return FileResponse(dfile, as_attachment=True, filename=file)
+    
+@csrf_exempt
 def raster_profilo(request,supporto):
 
   def dist(p0,p1):
