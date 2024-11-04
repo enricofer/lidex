@@ -27,9 +27,9 @@ cmake -DCMAKE_BUILD_TYPE=Release -DLASZIP_INCLUDE_DIRS=/opt/LAStools/LASzip/dll/
 make && cp -r /opt/PotreeConverter/resources /opt/PotreeConverter/build/resources
 
 RUN apt-get install -y python3 python3-pip 
-RUN apt-get install -y binutils libproj-dev gdal-bin libgdal-dev
+#RUN apt-get install -y binutils libproj-dev gdal-bin libgdal-dev
 
-RUN pip install django
+#RUN pip install django
 
 RUN apt-get clean \
     && rm -rf /var/lib/apt/lists/*
@@ -42,6 +42,7 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 RUN conda config --add channels conda-forge
 RUN conda config --set channel_priority strict
+RUN conda config --set solver classic
 
 #RUN conda install django
 #ENV PROJ_LIB=/usr/share/proj
@@ -51,9 +52,10 @@ RUN conda install pdal
 RUN conda install python
 RUN conda install django
 RUN conda install affine
-RUN conda install ezdxf
+RUN conda install ezdxf==1.2.0
 RUN conda install django-cors-headers
 ENV PROJ_LIB=/opt/conda/share/proj
+
 
 WORKDIR /app
 

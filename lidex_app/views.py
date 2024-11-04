@@ -9,6 +9,7 @@ from django.conf import settings
 import json
 import uuid
 import subprocess
+import shlex
 import os
 from pathlib import Path
 import shutil
@@ -28,6 +29,10 @@ dxfcols = {
    "dtm": 1,
    "dsm": 3
 }
+
+DSM_GBO_PATH = "/coverage/dsm_gbo.tif"
+DSM_PATH = "/coverage/dsm.tif"
+DTM_PATH = "/coverage/dtm.tif"
 
 from pdal_cmd import pdal_tindex_merge, potreeConvert, pdal_info
 
@@ -89,8 +94,11 @@ def extract_point_from_raster(data_source, p, band_number=1):
 
     # Extract pixel value
     band = data_source.GetRasterBand(band_number)
-    structval = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
-    result = struct.unpack('f', structval)[0]
+    try:
+      structval = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
+      result = struct.unpack('f', structval)[0]
+    except:
+       result = float('nan')
     if result == band.GetNoDataValue():
         result = float('nan')
     return result
@@ -157,14 +165,18 @@ def raster_clip(request):
   })
 
 @csrf_exempt
-def raster_sample(request,supporto):
-  if request.method == 'POST':
-    json_data = json.loads(request.body)
-    p = json_data.get('sample')
+def raster_sample(request):
+  if request.method == 'GET':
+    p_raw = request.GET.get('sample')
+    p = [float(c) for c in p_raw.split(',')]
+    res = {}
     if p:
-       ds = gdal.Open("/coverage/%s.tif" % supporto)
-       res = extract_point_from_raster(ds,p)
-       return JsonResponse({"result": res})
+      res["point"] = p
+      for supporto in ['h','dtm','dsm']:
+        ds = gdal.Open("/coverage/%s.tif" % supporto)
+        res[supporto] = extract_point_from_raster(ds,p)
+      print (res)
+      return JsonResponse(res)
     
 @csrf_exempt
 def output_file(request,dir,file):
@@ -172,6 +184,100 @@ def output_file(request,dir,file):
    if os.path.exists(dpath):
       with open(dpath,'rb') as dfile:
          return FileResponse(dfile, as_attachment=True, filename=file)
+      
+@csrf_exempt
+def viewshed(request):
+  observation = request.GET.get("observation")
+  if not observation or len(observation.split(",")) != 2:
+    return JsonResponse({
+        "res": "KO",
+        "errore": "punto di osservazione non corretto",
+        "punto_di_osservazione": observation,
+        "output": None,
+    })
+     
+  x = observation.split(",")[0]
+  y = observation.split(",")[1]
+  dsm_ds = gdal.Open(DSM_GBO_PATH)
+  observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]) + 1.00)
+  print ("VIEWSHED observation", x, y)
+  cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
+  #cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f PNG -co WORLDFILE=YES {dsm} {output}"""
+
+  output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
+  os.makedirs(output_dir)
+  viewshed_path = os.path.join(output_dir,"viewshed.tif")
+  #viewshed_path = os.path.join(output_dir,"viewshed.png")
+
+  cmd = cmd_template.format(
+     dsm = DSM_GBO_PATH,
+     output = viewshed_path,
+     x = x,
+     y = y,
+     r = 500
+  )
+
+  args = shlex.split(cmd)
+  with subprocess.Popen(args) as proc:
+      stdout, stderr = proc.communicate()
+  if proc.returncode:
+      return JsonResponse({
+          "res": "KO",
+          "cmd": cmd,
+          "errore": stderr,
+          "punto_di_osservazione": observation,
+          "output": None,
+      })
+
+  return JsonResponse({
+      "res": "OK",
+      "punto_di_osservazione": observation,
+      "output": viewshed_path,
+  })
+
+
+
+def viewshed_pythonapi():
+  try:
+    ds = gdal.Open(DSM_PATH)
+    band= ds.GetRasterBand(1)
+    gdal.UseExceptions()
+    res = gdal.ViewshedGenerate(
+        srcBand = band,
+        driverName = 'GTiff',
+        targetRasterName = viewshed_path,
+        creationOptions = [], #['COMPRESS=DEFLATE', 'PREDICTOR=2', 'ZLEVEL=9'],
+        observerX = float(x),
+        observerY = float(y),
+        observerHeight = 1,
+        targetHeight = 1,
+        visibleVal = 255.0,
+        invisibleVal = 0.0,
+        outOfRangeVal = 0.0,
+        noDataVal = 0.0,
+        dfCurvCoeff = 1.0,
+        mode = 1,
+        maxDistance = 500.0) 
+
+    
+
+    return JsonResponse({
+        "res": "OK",
+        "punto_di_osservazione": observation,
+        "output": viewshed_path,
+    })
+
+  except Exception as E:
+      return JsonResponse({
+          "res": "KO",
+          "ds": str(ds),
+          "band": str(band),
+          "cmd": cmd_template,
+          "errore": str(E),
+          "punto_di_osservazione": observation,
+          "output": None,
+      })
+
     
 @csrf_exempt
 def raster_profilo(request,supporto):
@@ -203,6 +309,7 @@ def raster_profilo(request,supporto):
         m = 0
         output[supporto]["wkt"] = "LINESTRING ZM ( "
         output[supporto]["xyz"] = []
+        print (dxfdoc)
         dxfdoc.layers.add(name=supporto, color=dxfcols[supporto])
         dxfpoints = []
 
@@ -227,10 +334,12 @@ def raster_profilo(request,supporto):
       dxfdoc.saveas(dxffile)
 
       print ("output", output)
+      print ("dxffile", dxffile)
+      print ("dxf", os.environ.get("SITE_SUBPATH", "") + dxffile)
 
       return JsonResponse({
          "profile": l,
-         "dxf": "/lidex"+dxffile,
+         "dxf": os.environ.get("SITE_SUBPATH", "") + dxffile,
          "output": output,
       })
 
@@ -251,6 +360,7 @@ def punti(request):
        print("closed poligon?",geom[0][0],geom[0][-1])
 
     output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
+    print (output_dir)
     os.makedirs(output_dir)
     output_laz = os.path.join(output_dir,"estratto.laz")
     #try:
@@ -277,8 +387,8 @@ def punti(request):
         "info": json.loads(pdal_info(output_laz)),
         "remote": get_client_ip(request),
         "time": datetime.now().isoformat(),
-        "output_dir": "/lidex"+output_dir,
-        "output_laz": "/lidex"+output_laz,
+        "output_dir": os.environ.get("SITE_SUBPATH", "") + output_dir,
+        "output_laz": os.environ.get("SITE_SUBPATH", "") + output_laz,
       }
 
       with open(os.path.join(output_dir,"metadata.json"), "w") as outf:
