@@ -1,8 +1,8 @@
 version: '3.9'
 services:
 
-  lidex:
-    image: lidex:latest
+  lidex_app:
+    image: lidex:0.2
     command: /opt/conda/bin/python manage.py runserver 0.0.0.0:8008 #/opt/conda/envs/pdal/bin/python
     deploy:
         replicas: 1
@@ -13,7 +13,7 @@ services:
       - ./lidex_app:/app
       - ./output:/output
 
-  nginx:
+  lidex_nginx:
     image: nginx:latest
     volumes:
       - ./lidex_app/static:/app/static
@@ -21,6 +21,6 @@ services:
       - ./output:/output
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     ports:
-      - 1337:80
+      - 7080:80
     depends_on:
-      - lidex
+      - lidex_app
