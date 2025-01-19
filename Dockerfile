@@ -2,14 +2,14 @@ FROM ubuntu:20.04
 #VOLUME ["/input", "/output"]
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-ENV HTTPS_PROXY=http://172.20.0.252:3128
-ENV HTTP_PROXY=http://172.20.0.252:3128
+#ENV HTTPS_PROXY=http://172.20.0.252:3128
+#ENV HTTP_PROXY=http://172.20.0.252:3128
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y git cmake build-essential wget
 
-RUN git config --global http.proxy http://172.20.0.252:3128
-RUN git config --global https.proxy http://172.20.0.252:3128
+#RUN git config --global http.proxy http://172.20.0.252:3128
+#RUN git config --global https.proxy http://172.20.0.252:3128
 
 RUN apt-get update && apt-get install -y \
 libtiff-dev libgeotiff-dev libgdal-dev \
@@ -41,19 +41,22 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 # Put conda in path so we can use conda activate
 ENV PATH=$CONDA_DIR/bin:$PATH
 RUN conda config --add channels conda-forge
-RUN conda config --set channel_priority strict
-RUN conda config --set solver classic
+RUN conda config --set channel_priority flexible
+RUN conda update -n base --all
+RUN conda install -n base mamba
 
-#RUN conda install django
-#ENV PROJ_LIB=/usr/share/proj
-RUN conda install proj proj-data
-RUN conda install gdal
-RUN conda install pdal
-RUN conda install python
-RUN conda install django
-RUN conda install affine
-RUN conda install ezdxf==1.2.0
-RUN conda install django-cors-headers
+#RUN conda config --remove-key channels
+#RUN conda config --set solver classic
+
+RUN mamba install python==3.10
+RUN mamba install proj 
+RUN mamba install proj-data
+RUN mamba install gdal
+RUN mamba install pdal
+RUN mamba install django
+RUN mamba install affine
+RUN mamba install ezdxf==1.2.0
+RUN mamba install django-cors-headers
 ENV PROJ_LIB=/opt/conda/share/proj
 
 

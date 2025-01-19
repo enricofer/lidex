@@ -30,9 +30,7 @@ dxfcols = {
    "dsm": 3
 }
 
-DSM_GBO_PATH = "/coverage/dsm_gbo.tif"
-DSM_PATH = "/coverage/dsm.tif"
-DTM_PATH = "/coverage/dtm.tif"
+
 
 from pdal_cmd import pdal_tindex_merge, potreeConvert, pdal_info
 
@@ -136,8 +134,8 @@ def raster_clip(request):
   wkt = "MultiPolygon (((725756.99194004340097308 5033097.3502550395205617, 725758.98586401692591608 5033101.92823928128927946, 725760.93224944337271154 5033106.28984660189598799, 725764.55172856152057648 5033114.38015291187912226, 725764.68686586804687977 5033114.67864623293280602, 725765.46170322201214731 5033116.39011867251247168, 725767.5616444549523294 5033121.10003831516951323, 725769.40159250260330737 5033125.33996577281504869, 725771.25154011743143201 5033129.63989212457090616, 725773.57147413236089051 5033135.00961163453757763, 725776.49330876884050667 5033152.57359787728637457, 725778.06127960572484881 5033161.99912041146308184, 725780.19118764076847583 5033174.81907565984874964, 725780.44093347317539155 5033176.42014800477772951, 725781.31035933317616582 5033176.46436056867241859, 725797.39726133039221168 5033175.16005070507526398, 725816.34649835014715791 5033173.6237223306670785, 725839.02348420722410083 5033171.78516298532485962, 725839.0435239520156756 5033171.78353824466466904, 725839.00929532910231501 5033171.30715669319033623, 725838.78519657766446471 5033169.77434113249182701, 725838.60010954912286252 5033169.02923425193876028, 725838.09123523777816445 5033166.26529488246887922, 725837.85642019752413034 5033164.98990227561444044, 725832.50502913608215749 5033135.92394216172397137, 725832.6223568522837013 5033135.9668340552598238, 725820.50540597876533866 5033067.29173220880329609, 725819.40248168481048197 5033067.82572093419730663, 725780.94716244575101882 5033086.22425184678286314, 725757.21896891528740525 5033097.15096196159720421, 725756.95826569583732635 5033097.28050541877746582, 725756.99194004340097308 5033097.3502550395205617)))"
   output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
   os.makedirs(output_dir)
-  res_dsm = clip_raster("/coverage/dsm.tif", output_dir, wkt, "32632", "clipped_dsm")
-  res_dtm = clip_raster("/coverage/dtm.tif", output_dir, wkt, "32632", "clipped_dtm")
+  res_dsm = clip_raster(settings.DSM_PATH, output_dir, wkt, "32632", "clipped_dsm")
+  res_dtm = clip_raster(settings.DTM_PATH, output_dir, wkt, "32632", "clipped_dtm")
   res_h1 = os.path.join(output_dir, "clipped_tmp.tif" )
   res_h2 = os.path.join(output_dir, "clipped_h.tif" )
   res_ds1 = gdal_calc.Calc("((A-B)>0.5)*(A-B)", A=res_dsm, B=res_dtm, outfile=res_h1)
@@ -172,8 +170,8 @@ def raster_sample(request):
     res = {}
     if p:
       res["point"] = p
-      for supporto in ['h','dtm','dsm']:
-        ds = gdal.Open("/coverage/%s.tif" % supporto)
+      for supporto in [settings.DTM_PATH, settings.DSM_PATH]: #h?
+        ds = gdal.Open(supporto)
         res[supporto] = extract_point_from_raster(ds,p)
       print (res)
       return JsonResponse(res)
@@ -198,7 +196,7 @@ def viewshed(request):
      
   x = observation.split(",")[0]
   y = observation.split(",")[1]
-  dsm_ds = gdal.Open(DSM_GBO_PATH)
+  dsm_ds = gdal.Open(settings.DSM_PATH)
   observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]) + 1.00)
   print ("VIEWSHED observation", x, y)
   cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
@@ -210,7 +208,7 @@ def viewshed(request):
   #viewshed_path = os.path.join(output_dir,"viewshed.png")
 
   cmd = cmd_template.format(
-     dsm = DSM_GBO_PATH,
+     dsm = settings.DSM_PATH,
      output = viewshed_path,
      x = x,
      y = y,
@@ -345,7 +343,7 @@ def raster_profilo(request,supporto):
 
 
 def globmap(request):
-    return render(request, 'map.html', {})
+    return render(request, 'map.html', {"srid": settings.PDAL_COVERAGE_INDEX_SRS})
 
 @csrf_exempt
 def punti(request):
@@ -369,7 +367,7 @@ def punti(request):
       output_laz, 
       bounds=extent, 
       polygon= wktgeom,
-      t_srs= settings.PDAL_COVERAGE_INDEX_SRS,
+      #t_srs= settings.PDAL_COVERAGE_INDEX_SRS,
       ogrdriver= settings.PDAL_COVERAGE_INDEX_FORMAT,
       lyr_name= settings.PDAL_COVERAGE_INDEX_LAYER
     )
@@ -387,8 +385,8 @@ def punti(request):
         "info": json.loads(pdal_info(output_laz)),
         "remote": get_client_ip(request),
         "time": datetime.now().isoformat(),
-        "output_dir": os.environ.get("SITE_SUBPATH", "") + output_dir,
-        "output_laz": os.environ.get("SITE_SUBPATH", "") + output_laz,
+        "output_dir": settings.LIDEX_SUBPATH + output_dir,
+        "output_laz": settings.LIDEX_SUBPATH + output_laz,
       }
 
       with open(os.path.join(output_dir,"metadata.json"), "w") as outf:

@@ -126,10 +126,13 @@ STATICFILES_DIRS = [ BASE_DIR / "static","static/",]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-PDAL_COVERAGE_INDEX_PATH = "/coverage/index_utm.sqlite"
+PDAL_COVERAGE_INDEX_PATH = "/coverage/index_pds2.sqlite"
 PDAL_COVERAGE_INDEX_FORMAT = "SQLite"
 PDAL_COVERAGE_INDEX_LAYER = "pdal"
-PDAL_COVERAGE_INDEX_SRS = "EPSG:25832"
+PDAL_COVERAGE_INDEX_SRS = "EPSG:7792"
 PDAL_OUTPUT_DIR = "/output"
+LIDEX_SUBPATH = "/lidex"
+DSM_PATH = "/coverage/dsm.tif"
+DTM_PATH = "/coverage/dtm.tif"
 
 CORS_ALLOW_ALL_ORIGINS = True

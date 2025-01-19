@@ -2,7 +2,7 @@ version: '3.9'
 services:
 
   lidex_app:
-    image: lidex:0.2
+    image: lidex:0.3
     command: /opt/conda/bin/python manage.py runserver 0.0.0.0:8008 #/opt/conda/envs/pdal/bin/python
     deploy:
         replicas: 1
