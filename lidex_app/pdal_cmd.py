@@ -2,9 +2,8 @@ import subprocess
 import json
 import os
 from django.contrib.gis.geos import Polygon
+from django.conf import settings
 
-PDAL_EXE = "pdal" #"/usr/bin/pdal" #"/opt/conda/envs/pdal/bin/pdal"
-POTREECONVERTER_EXE = "/opt/PotreeConverter/build/PotreeConverter"
 
 def extentToPolygon(ex):
     return Polygon(
@@ -22,7 +21,7 @@ class PDALException(Exception):
 
 def ex_executePDAL(commands, cmd=None ,path=None, feedback=None):
     if not cmd:
-        commands.insert(0, PDAL_EXE)
+        commands.insert(0, settings.LIDEX_PDAL_EXE)
     else:
         commands.insert(0, cmd)
     print (os.environ.copy())
@@ -65,7 +64,7 @@ def ex_executePDAL(commands, cmd=None ,path=None, feedback=None):
 
 def executePDAL(commands, cmd=None ,path=None, feedback=None):
     if not cmd:
-        commands.insert(0, PDAL_EXE)
+        commands.insert(0, settings.LIDEX_PDAL_EXE)
     else:
         commands.insert(0, cmd)
     cmd = " ".join(commands)
@@ -103,4 +102,4 @@ def pdal_tindex_merge(index, output, bounds=None, polygon=None, t_srs=None, ogrd
 def potreeConvert(las):
     output_dir = os.path.join(os.path.dirname(las), "model")
     print ("potree output", output_dir)
-    return executePDAL([las, "-o", output_dir,"--generate-page", "index"], cmd=POTREECONVERTER_EXE)
+    return executePDAL([las, "-o", output_dir,"--generate-page", "index"], cmd=settings.LIDEX_POTREECONVERTER_EXE)
