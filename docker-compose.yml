@@ -10,14 +10,14 @@ services:
           condition: on-failure
     volumes:
       - ./coverage:/coverage
-      - ./lidex_app:/app
+      - ./lidex:/app
       - ./output:/output
 
   lidex_nginx:
     image: nginx:latest
     volumes:
-      - ./lidex_app/static:/app/static
-      - ./lidex_app:/app
+      - ./lidex/static:/app/static
+      - ./lidex:/app
       - ./output:/output
       - ./nginx.conf:/etc/nginx/conf.d/default.conf
     ports:

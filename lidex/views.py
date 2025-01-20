@@ -167,12 +167,17 @@ def raster_sample(request):
   if request.method == 'GET':
     p_raw = request.GET.get('sample')
     p = [float(c) for c in p_raw.split(',')]
+    decode = {
+       "dtm": settings.LIDEX_DTM_PATH,
+       "dsm": settings.LIDEX_DSM_PATH,
+    }
     res = {}
     if p:
       res["point"] = p
-      for supporto in [settings.LIDEX_DTM_PATH, settings.LIDEX_DSM_PATH]: #h?
-        ds = gdal.Open(supporto)
-        res[supporto] = extract_point_from_raster(ds,p)
+      for asset_name, asset_path in decode.items(): #h?
+        ds = gdal.Open(asset_path)
+        res[asset_name] = extract_point_from_raster(ds,p)
+      res['h'] = res['dsm'] - res['dtm']
       print (res)
       return JsonResponse(res)
     
