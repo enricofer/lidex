@@ -158,7 +158,7 @@
 
     <script>
       var RDN2008UTM33_ext = [182293.8863519125152379,1992757.4727728092111647, 2629600.1400186931714416,5409638.5214586956426501];
-      proj4.defs('EPSG:7792', '+proj=utm +zone=33 +ellps=GRS80 +units=m +no_defs +type=crs');
+      proj4.defs('EPSG:7792', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
       var RDN2008UTM33_proj = new ol.proj.Projection({
           code: 'EPSG:7792',
           worldExtent: [12.0, 34.79, 18.0, 47.1] 
@@ -185,7 +185,7 @@
 
 
       var UTM32Extent = [166021.44, 0.0, 833978.56, 9329005.18];
-      proj4.defs('EPSG:32632', '+proj=utm +zone=32 +datum=WGS84 +towgs84=128.8,17.85,0,0,0,0,0 +units=m +no_defs');
+      proj4.defs('EPSG:32632', '+proj=utm +zone=32 +datum=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
       var UTM32proj = new ol.proj.Projection({
           code: 'EPSG:32632',
           worldExtent: [6.0, 0.0, 12.0, 84.0]
@@ -193,7 +193,7 @@
       ol.proj.addProjection(UTM32proj);
 
         var ETRS89Extent = [719459.961,5024860.053, 733523.921,5038269.875];
-        proj4.defs('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +towgs84=128.8,17.85,0,0,0,0,0 +units=m +no_defs');
+        proj4.defs('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
         var ETRS89proj = new ol.proj.Projection({
             code: 'EPSG:25832',
             worldExtent: [6.0, 36.53, 12.01, 84.01]
