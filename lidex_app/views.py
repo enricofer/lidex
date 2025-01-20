@@ -313,6 +313,8 @@ def raster_profilo(request,supporto):
 
         while ( dist(sample, p1) > 0.5 ):
           res = extract_point_from_raster(ds,sample)
+          if np.isnan(res):
+             res = 0
           output[supporto]["xyz"].append([sample[0], sample[1], res])
           output[supporto]["wkt"] += "%f %f %f %f, " % (sample[0], sample[1], res, m)
           dxfpoints.append([m,res])
