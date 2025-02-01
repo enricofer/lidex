@@ -1,3 +1,0 @@
-recursive-include lidex/templates *
-recursive-exclude coverage *
-recursive-exclude output *

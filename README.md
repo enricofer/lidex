@@ -2,6 +2,17 @@
 
 A Django app for easy publishing and serving human friendly extraction of point cloud coverage
 
+## Build docker containers
+
+```
+docker build -t lidex_webapp:latest .
+docker build -t lidex_qgis:latest ./build_qgis
+docker build -t lidex_nginx:latest ./build_nginx
+docker build -t lidex_mapproxy:latest ./build_mapproxy
+docker build -t lidex_frontend_dev:latest -f ./wegue/Dockerfile_dev ./wegue
+```
+
+
 ## Configuration
 
 - add `'lidex'` to INSTALLED_APPS in settings.py webapp

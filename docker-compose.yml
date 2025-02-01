@@ -1,26 +1,62 @@
-version: '3.9'
 services:
 
-  lidex_app:
-    image: lidex:0.3
+  lidex_webapp:
+    image: lidex_webapp:latest
     command: /opt/conda/bin/python manage.py runserver 0.0.0.0:8008 #/opt/conda/envs/pdal/bin/python
+    env_file:
+      - .env
     deploy:
         replicas: 1
         restart_policy:
           condition: on-failure
     volumes:
-      - ./coverage:/coverage
+      - ./data/coverage:/coverage
       - ./lidex:/app
-      - ./output:/output
+      - ./data/output:/output
 
-  lidex_nginx:
-    image: nginx:latest
+  lidex_test_nginx:
+    image: lidex_nginx:latest
+    env_file:
+      - .env
     volumes:
       - ./lidex/static:/app/static
-      - ./lidex:/app
-      - ./output:/output
-      - ./nginx.conf:/etc/nginx/conf.d/default.conf
+      - ./data/output:/output
+      - ./nginx_8080_template.conf:/etc/nginx/conf.d/default.conf.template
     ports:
-      - 7080:80
+      - 8080:8080
     depends_on:
-      - lidex_app
+      - lidex_webapp
+
+  lidex_webgis_dev:
+    image: lidex_frontend_dev:latest
+    env_file:
+      - .env
+    volumes:
+      - ./wegue_custom_app/wegue_custom:/app/app
+    ports:
+      - 8087:8081
+    depends_on:
+      - lidex_webapp
+
+  lidex_qgisserver:
+    image: lidex_qgis:latest
+    env_file:
+      - .env
+    volumes:
+      - ./data:/data
+      - ./data/services/plugins:/plugins
+
+  lidex_nginx:
+    image: lidex_nginx:latest
+    env_file:
+      - .env
+    volumes:
+      - ./lidex/static:/app/static
+      - ./data/output:/output
+      - ./nginx_80_template.conf:/etc/nginx/conf.d/default.conf.template
+    ports:
+      - 80:80
+    depends_on:
+      - lidex_webapp
+      - lidex_qgisserver
+      - lidex_webgis_dev

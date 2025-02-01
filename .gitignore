@@ -1,4 +1,6 @@
 *.pyc
 __pycache__
-coverage/*
-output/*
+data/*
+mapproxy/*
+wegue_custom_app/wegue_common/*
+wegue/*

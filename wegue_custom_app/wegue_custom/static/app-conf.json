@@ -1,0 +1,243 @@
+{
+"colorTheme": {
+  "dark": false, 
+  "themes": {   
+    "light": {  
+      "primary": "#af2622",
+      "onprimary": "#ffffff",
+      "secondary": "#ec483b",
+      "onsecondary": "#ffffff",
+      "error": "#ff6f00"
+    },
+    "dark": {   
+      "primary": "#3c4245",
+      "onprimary": "#dfcdc3",
+      "secondary": "#719192",
+      "onsecondary": "#a6e4e7",
+      "error": "#ff6f00"
+    }
+  }
+},
+
+  "logo": "/dbtman/static/logopd.png",
+  "logoSize": 100,
+  "showCopyrightYear": true,
+
+  "lang": {
+    "supported": {
+      "en": "English",
+      "it": "Italiano"
+    },
+    "fallback": "it"
+  },
+
+  "mapZoom": 11,
+  "mapCenter": [ 267411,5019199],
+  "mapProjection": {
+    "code": "EPSG:7792",
+    "units": "m",
+    "extent": [182293.8863519125152379,1992757.4727728092111647, 2629600.1400186931714416,5409638.5214586956426501]
+  },
+
+  "projectionDefs": [
+    [
+      "EPSG:7792",
+      "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+    ],
+    [
+      "EPSG:32632",
+      "+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs"
+    ],
+    [
+      "EPSG:25832",
+      "+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs"
+    ]
+  ],
+
+  "mapLayers": [
+    {
+      "type": "WMS",
+      "name": "CTRN",
+      "format": "image/png",
+      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
+      "lid": "CTRN",
+      "isBaseLayer": true,
+      "projection": "EPSG:32632",
+      "layers": "rv:ctrr",
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "WMS",
+      "name": "Ortofoto 2021",
+      "format": "image/png",
+      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
+      "lid": "ORTOFOTO2021",
+      "isBaseLayer": true,
+      "projection": "EPSG:32632",
+      "layers": "ortofoto_2021",
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "WMS",
+      "name": "Ortofoto 2018",
+      "format": "image/png",
+      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
+      "lid": "ORTOFOTO2018",
+      "isBaseLayer": true,
+      "projection": "EPSG:32632",
+      "layers": "rv:Ortofoto2018_Veneto",
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "OSM",
+      "lid": "osm-bg",
+      "isBaseLayer": true,
+      "visible": false,
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "WMS",
+      "name": "Nessuna base",
+      "format": "image/png",
+      "url": "",
+      "lid": "nobase",
+      "isBaseLayer": true,
+      "layers": "",
+      "crossOrigin": "anonymous"
+    }
+  ],
+  "modules": {
+    "wgu-helpwin": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "grain",
+      "draggable": true,
+      "visible": false,
+      "initPos": {
+        "left": 98,
+        "top": 74
+      },
+      "darkLayout": true
+    },
+    "wgu-start-menu": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-map-legend",
+      "draggable": true,
+      "visible": true,
+      "initPos": {
+        "left": 98,
+        "top": 74
+      },
+      "items": ["wgu-getPointCloud","wgu-profili"]
+    },
+    "wgu-getPointCloud": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "grain",
+      "draggable": true,
+      "initPos": {
+        "left": 610,
+        "top": 74
+      }
+    },
+    "wgu-profili": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-slope-uphill",
+      "draggable": true,
+      "initPos": {
+        "left": 610,
+        "top": 74
+      }
+    },
+    "wgu-print": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-printer",
+      "draggable": true,
+      "initPos": {
+        "left": 8,
+        "top": 74
+      }
+    },
+    "wgu-layerlist": {
+      "target": "menu",
+      "icon": "layers",
+      "win": "floating",
+      "draggable": false
+    },
+    "wgu-infoclick": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "info",
+      "draggable": false,
+      "initPos": {
+        "left": 8,
+        "top": 74
+      }
+    },
+    "wgu-measuretool": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "photo_size_select_small",
+      "draggable": false,
+      "strokeColor": "#c62828",
+      "fillColor": "rgba(198,40,40,0.2)",
+      "sketchStrokeColor": "rgba(198,40,40,0.8)",
+      "sketchFillColor": "rgba(198,40,40,0.1)",
+      "sketchVertexStrokeColor": "#c62828",
+      "sketchVertexFillColor": "rgba(198,40,40,0.2)"
+    },
+    "wgu-zoomtomaxextent": {
+      "target": "toolbar",
+      "darkLayout": true
+    },
+    "wgu-geocoder": {
+      "target": "toolbar",
+      "darkLayout": true,
+      "minChars": 2,
+      "queryDelay": 200,
+      "selectZoom": 16,
+      "debug": false,
+      "placeHolder": "Search address",
+      "provider": "osm",
+      "providerOptions": {
+        "lang": "it-IT",
+        "countrycodes": "it",
+        "limit": 10
+      }
+    },
+    "wgu-geolocator": {
+      "target": "toolbar",
+      "darkLayout": true
+    },
+    "wgu-attributetable": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "table_chart",
+      "syncTableMapSelection": true
+    }
+  },
+  "mapGeodataDragDop": {
+    "formats": [
+      "GeoJSON",
+      "KML"
+    ],
+    "zoomToData": true,
+    "replaceData": true,
+    "displayInLayerList": true,
+    "layerName": "Uploaded Data"
+  },
+  "permalink": {
+    "location": "hash",
+    "layers": true,
+    "extent": false,
+    "projection": "EPSG:4326",
+    "paramPrefix": "",
+    "history": true
+  },
+  "overviewMap": {
+    "visible": false
+  }
+}
