@@ -133,7 +133,7 @@ export default {
       if (e.type === 'over') WguEventBus.$emit('wgu-profile-cursor', e.coord)
       if (e.coord) {
         const tc = new Point(e.coord)
-        tc.transform('EPSG:32632', 'EPSG:3003')
+        tc.transform('EPSG:7792', 'EPSG:7792')
         drawPoint({ type: 'over', coord: tc.getCoordinates() });
       }
       me.profileCtrl.showAt(e.distance)
@@ -154,7 +154,7 @@ export default {
       drawPoint({ type: 'over', coord: c });
       // Show profil
       const tc = new Point(c)
-      tc.transform('EPSG:3003', 'EPSG:32632')
+      tc.transform('EPSG:7792', 'EPSG:7792')
       WguEventBus.$emit('wgu-profile-cursor', tc.getCoordinates())
     });
 
@@ -209,7 +209,7 @@ export default {
         this.pt.setStyle([]);
         this.profileOverlay.getSource().addFeature(this.pt);
         const geomgbo = feature.getGeometry();
-        geomgbo.transform('EPSG:32632', 'EPSG:3003');
+        geomgbo.transform('EPSG:7792', 'EPSG:7792');
         // const grow = buffer(geomgbo.getExtent(), 100)
         // this.map.getView().fit(geomgbo.getExtent());
         // console.log(geomgbo.getExtent())

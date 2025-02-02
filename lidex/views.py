@@ -42,16 +42,13 @@ def get_size(start_path):
             # skip if it is symbolic link
             if not os.path.islink(fp):
                 total_size += os.path.getsize(fp)
-    print ("OUTPUT_SIZE", total_size)
     return total_size
 
 def clean_output_buffer(size):
    paths = sorted(Path(settings.LIDEX_OUTPUT_DIR).iterdir(), key=os.path.getmtime)
-   print("SORTED OUTPUT DIRS:", paths)
    totsize = get_size(settings.LIDEX_OUTPUT_DIR)
    while paths and totsize > size :
       totsize = totsize - get_size(paths[0])
-      print ("deleting", paths[0], totsize)
       shutil.rmtree(paths[0])
       del paths[0]
 
@@ -72,9 +69,23 @@ def get_client_ip(request):
             ip = proxies[0]
     return ip
 
+def get_coverage_extent():
+   return gdal.VectorInfo(settings.LIDEX_COVERAGE_INDEX_PATH, format="json", deserialize=True)["layers"][0]["geometryFields"][0]["extent"]
+
+@csrf_exempt
+def coverage_extent(request):
+   return JsonResponse({"extent": get_coverage_extent()})
+
+
+def inside_coverage(p):
+   x, y = p
+   e = get_coverage_extent()
+   return x >= e[0] and x <= e[2] and y >= e[1] and y <= e[3]
+
 def extract_point_from_raster(data_source, p, band_number=1):
     """Return floating-point value that corresponds to given point."""
-
+    if not inside_coverage(p):
+       return
     # Convert point co-ordinates so that they are in same projection as raster
     #point_sr = point.GetSpatialReference()
     #raster_sr = osr.SpatialReference()
@@ -89,7 +100,7 @@ def extract_point_from_raster(data_source, p, band_number=1):
     reverse_transform = ~forward_transform
     px, py = reverse_transform * (x, y)
     px, py = int(px + 0.5), int(py + 0.5)
-
+    print (x,y,px,py)
     # Extract pixel value
     band = data_source.GetRasterBand(band_number)
     try:
@@ -110,7 +121,7 @@ def clip_raster(data_source,output_dir,wkt_polygon,srid,name="clipped"):
 {
 "type": "FeatureCollection",
 "name": "clipped",
-"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG:%s" } },
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:%s" } },
 "features": [
 { "type": "Feature", "properties": { "FID": 0 }, "geometry":  %s  }
 ]
@@ -134,8 +145,8 @@ def raster_clip(request):
   wkt = "MultiPolygon (((725756.99194004340097308 5033097.3502550395205617, 725758.98586401692591608 5033101.92823928128927946, 725760.93224944337271154 5033106.28984660189598799, 725764.55172856152057648 5033114.38015291187912226, 725764.68686586804687977 5033114.67864623293280602, 725765.46170322201214731 5033116.39011867251247168, 725767.5616444549523294 5033121.10003831516951323, 725769.40159250260330737 5033125.33996577281504869, 725771.25154011743143201 5033129.63989212457090616, 725773.57147413236089051 5033135.00961163453757763, 725776.49330876884050667 5033152.57359787728637457, 725778.06127960572484881 5033161.99912041146308184, 725780.19118764076847583 5033174.81907565984874964, 725780.44093347317539155 5033176.42014800477772951, 725781.31035933317616582 5033176.46436056867241859, 725797.39726133039221168 5033175.16005070507526398, 725816.34649835014715791 5033173.6237223306670785, 725839.02348420722410083 5033171.78516298532485962, 725839.0435239520156756 5033171.78353824466466904, 725839.00929532910231501 5033171.30715669319033623, 725838.78519657766446471 5033169.77434113249182701, 725838.60010954912286252 5033169.02923425193876028, 725838.09123523777816445 5033166.26529488246887922, 725837.85642019752413034 5033164.98990227561444044, 725832.50502913608215749 5033135.92394216172397137, 725832.6223568522837013 5033135.9668340552598238, 725820.50540597876533866 5033067.29173220880329609, 725819.40248168481048197 5033067.82572093419730663, 725780.94716244575101882 5033086.22425184678286314, 725757.21896891528740525 5033097.15096196159720421, 725756.95826569583732635 5033097.28050541877746582, 725756.99194004340097308 5033097.3502550395205617)))"
   output_dir = os.path.join(settings.LIDEX_OUTPUT_DIR,uuid.uuid4().hex)
   os.makedirs(output_dir)
-  res_dsm = clip_raster(settings.LIDEX_DSM_PATH, output_dir, wkt, "32632", "clipped_dsm")
-  res_dtm = clip_raster(settings.LIDEX_DTM_PATH, output_dir, wkt, "32632", "clipped_dtm")
+  res_dsm = clip_raster(settings.LIDEX_DSM_PATH, output_dir, wkt, settings.LIDEX_COVERAGE_SRS, "clipped_dsm")
+  res_dtm = clip_raster(settings.LIDEX_DTM_PATH, output_dir, wkt, settings.LIDEX_COVERAGE_SRS, "clipped_dtm")
   res_h1 = os.path.join(output_dir, "clipped_tmp.tif" )
   res_h2 = os.path.join(output_dir, "clipped_h.tif" )
   res_ds1 = gdal_calc.Calc("((A-B)>0.5)*(A-B)", A=res_dsm, B=res_dtm, outfile=res_h1)
@@ -148,8 +159,6 @@ def raster_clip(request):
 
   nrows,ncols = np.shape(h_array)
   ds = gdal.GetDriverByName('GTiff').Create(res_h2,ncols, nrows, 1 ,gdal.GDT_Float32)
-
-  print (np.nanmedian(h_array), np.nanmean(h_array), np.nanstd(h_array), np.nanvar(h_array),)
 
   ds.GetRasterBand(1).WriteArray(h_array)
   ds.FlushCache()
@@ -178,7 +187,6 @@ def raster_sample(request):
         ds = gdal.Open(asset_path)
         res[asset_name] = extract_point_from_raster(ds,p)
       res['h'] = res['dsm'] - res['dtm']
-      print (res)
       return JsonResponse(res)
     
 @csrf_exempt
@@ -203,7 +211,6 @@ def viewshed(request):
   y = observation.split(",")[1]
   dsm_ds = gdal.Open(settings.LIDEX_DSM_PATH)
   observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]) + 1.00)
-  print ("VIEWSHED observation", x, y)
   cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
   #cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f PNG -co WORLDFILE=YES {dsm} {output}"""
 
@@ -294,10 +301,10 @@ def raster_profilo(request,supporto):
     if l:
       p0 = l[0]
       p1 = l[1]
+      print ("PROFILO", p0, p1)
       a = math.atan2(p1[1]-p0[1], p1[0]-p0[0])
       stepx = 0.5 * math.cos(a)
       stepy = 0.5 * math.sin(a)
-      print (a,stepx,stepy)
       dxfdoc = ezdxf.new()
       msp = dxfdoc.modelspace()
 
@@ -312,13 +319,12 @@ def raster_profilo(request,supporto):
         m = 0
         output[supporto]["wkt"] = "LINESTRING ZM ( "
         output[supporto]["xyz"] = []
-        print (dxfdoc)
         dxfdoc.layers.add(name=supporto, color=dxfcols[supporto])
         dxfpoints = []
 
         while ( dist(sample, p1) > settings.LIDEX_PROFILE_SAMPLING ):
           res = extract_point_from_raster(ds,sample)
-          if np.isnan(res):
+          if not res or np.isnan(res):
              res = 0
           output[supporto]["xyz"].append([sample[0], sample[1], res])
           output[supporto]["wkt"] += "%f %f %f %f, " % (sample[0], sample[1], res, m)
@@ -327,7 +333,7 @@ def raster_profilo(request,supporto):
           m += 0.5
 
         res = extract_point_from_raster(ds,p1)
-        if np.isnan(res):
+        if not res or np.isnan(res):
             res = 0
         output[supporto]["xyz"].append([p1[0], p1[1], res])
         d = dist(p0, p1)
@@ -340,8 +346,6 @@ def raster_profilo(request,supporto):
       os.makedirs(output_dir)
       dxfdoc.saveas(dxffile)
 
-      print ("output", output)
-      print ("dxffile", dxffile)
       print ("dxf", settings.LIDEX_SUBPATH + dxffile)
 
       return JsonResponse({
@@ -358,16 +362,13 @@ def globmap(request):
 def punti(request):
   clean_output_buffer(5000000000)
   if request.method == 'POST':
-    print(request.body)
     json_data = json.loads(request.body) # request.raw_post_data w/ Django < 1.4
     extent = json_data.get('extent')
     wktgeom = json_data.get('geom')
     if wktgeom:
        geom = GEOSGeometry(wktgeom)
-       print("closed poligon?",geom[0][0],geom[0][-1])
 
     output_dir = os.path.join(settings.LIDEX_OUTPUT_DIR,uuid.uuid4().hex)
-    print (output_dir)
     os.makedirs(output_dir)
     output_laz = os.path.join(output_dir,"estratto.laz")
     #try:
@@ -384,7 +385,6 @@ def punti(request):
     if os.path.exists(output_laz):
 
       res2 = potreeConvert(output_laz)
-      print ("potree converter", output_laz)
 
       metadata = {
         "result": res,

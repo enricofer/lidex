@@ -36,7 +36,7 @@
   "mapProjection": {
     "code": "EPSG:7792",
     "units": "m",
-    "extent": [182293.8863519125152379,1992757.4727728092111647, 2629600.1400186931714416,5409638.5214586956426501]
+    "extent": [264732.0113,5017863.5858,269364.5573,5020819.6858]
   },
 
   "projectionDefs": [
@@ -57,11 +57,24 @@
   "mapLayers": [
     {
       "type": "WMS",
+      "name": "Ortofoto 2024",
+      "format": "image/jpeg",
+      "url": "http://localhost/qgisserver/?MAP=/data/services/coverage.qgz",
+      "lid": "PVS24_ortho",
+      "isBaseLayer": true,
+      "visible": true,
+      "projection": "EPSG:25832",
+      "layers": "PVS24_ortho",
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "WMS",
       "name": "CTRN",
       "format": "image/png",
       "url": "https://idt2.regione.veneto.it/idt/geo/wms",
       "lid": "CTRN",
       "isBaseLayer": true,
+      "visible": false,
       "projection": "EPSG:32632",
       "layers": "rv:ctrr",
       "crossOrigin": "anonymous"
@@ -73,6 +86,7 @@
       "url": "https://idt2.regione.veneto.it/idt/geo/wms",
       "lid": "ORTOFOTO2021",
       "isBaseLayer": true,
+      "visible": false,
       "projection": "EPSG:32632",
       "layers": "ortofoto_2021",
       "crossOrigin": "anonymous"
@@ -84,6 +98,7 @@
       "url": "https://idt2.regione.veneto.it/idt/geo/wms",
       "lid": "ORTOFOTO2018",
       "isBaseLayer": true,
+      "visible": false,
       "projection": "EPSG:32632",
       "layers": "rv:Ortofoto2018_Veneto",
       "crossOrigin": "anonymous"

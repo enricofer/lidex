@@ -1,5 +1,6 @@
 <!-- The template contains the HTML of our module  -->
 <template>
+  <!--  eslint-disable  -->
   <!--
   Our module builds upon the 'wgu-module-card'
   it handles the integration into Wegue
@@ -131,8 +132,9 @@ export default {
 
         this.drawLine.on('drawend', function (event) {
           const profileLine = event.feature.getGeometry()
-          profileLine.transform('EPSG:3003', 'EPSG:32632')
+          //profileLine.transform('EPSG:32632', 'EPSG:7792')
           const coords = profileLine.getCoordinates()
+          console.log(coords)
           console.log('drawend', coords)
           const url = process.env.VUE_APP_LIDEX + '/profilo/dtm/'
           axios.post(url, { line: coords })

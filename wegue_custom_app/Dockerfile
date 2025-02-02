@@ -24,11 +24,12 @@ RUN npm install jspdf
 RUN npm install ol-ext
 RUN npm install proj4
 RUN npm install jsonp
+RUN npm install eslint -g -D
+RUN eslint --init
 
 #COPY . .
 #RUN npm run init:app
 EXPOSE 8081
 CMD ["npm", "run", "serve"] 
 
-# docker build -t frontend_dev:latest --build-context custo_app=./wegue_custom_app -f ./Dockerfile_wegue_dev ./wegue
-#
+# docker build -t lidex:latest ./wegue_custom_app

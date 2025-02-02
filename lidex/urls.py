@@ -16,7 +16,7 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
-from views import globmap, punti, raster_sample, raster_profilo, raster_clip,output_file,viewshed
+from views import globmap, punti, raster_sample, raster_profilo, raster_clip,output_file,viewshed, coverage_extent
 
 urlpatterns = [
     path('lidex/map/', globmap),
@@ -26,4 +26,5 @@ urlpatterns = [
     re_path('^lidex/output_file/(.*)/(.*)$', output_file, name="output_file"),
     re_path('^lidex/viewshed/$', viewshed, name="output_file"),
     re_path('^lidex/clip/$', raster_clip, name="raster_clip"),
+    re_path('^lidex/coverage_extent/$', coverage_extent, name="coverage_extent"),
 ]

@@ -60,10 +60,13 @@ import ToggleButton from '../../src/components/modulecore/ToggleButton'
 import printCloudModule from './lidex/getPointCloud'
 import profili from './lidex/profili'
 import { WguEventBus } from '@/WguEventBus';
+import { Mapable } from '../../src/mixins/Mapable';
+import axios from 'axios';
 
 export default {
   name: 'wgu-start-menu-win',
   inheritAttrs: false,
+  mixins: [Mapable],
   components: {
     'wgu-module-card': ModuleCard,
     'wgu-toggle-btn': ToggleButton,
@@ -89,6 +92,13 @@ export default {
 
   mounted () {
     console.log('MOUNTED start menu', this.exclusions)
+    const me = this
+    const url = process.env.VUE_APP_LIDEX + 'coverage_extent/'
+      axios.get(url)
+        .then(response => {
+          console.log(response)
+          me.map.getView().fit(response.data.extent)
+        }).catch(console.error)
   },
 
   methods: {
