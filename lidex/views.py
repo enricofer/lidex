@@ -1,10 +1,11 @@
 from django.shortcuts import render
 from django.views.decorators.csrf import csrf_exempt
-from django.http import HttpResponseRedirect,JsonResponse,HttpResponse, FileResponse, HttpResponseServerError
+from django.http import HttpResponseRedirect, JsonResponse,HttpResponse, FileResponse, HttpResponseServerError
 from django.urls import reverse
 from django.template.loader import render_to_string, get_template
 from django.contrib.gis.geos import GEOSGeometry, Polygon
 from django.conf import settings
+from django import template
 
 import json
 import uuid
@@ -17,22 +18,32 @@ from datetime import datetime
 import struct
 import math
 
-from osgeo import gdal,osr
+from osgeo import gdal, osr
 from affine import Affine
 from osgeo_utils import gdal_calc
+
+from pdal_cmd import pdal_tindex_merge, potreeConvert, pdal_info
 
 import numpy as np
 
 import ezdxf
+
+register = template.Library()
+
+# settings value
+@register.simple_tag
+def settings_value(name):
+    return getattr(settings, name, "")
 
 dxfcols = {
    "dtm": 1,
    "dsm": 3
 }
 
-
-
-from pdal_cmd import pdal_tindex_merge, potreeConvert, pdal_info
+decode = {
+    "dtm": settings.LIDEX_DTM_PATH,
+    "dsm": settings.LIDEX_DSM_PATH,
+}
 
 def get_size(start_path):
     total_size = 0
@@ -69,6 +80,34 @@ def get_client_ip(request):
             ip = proxies[0]
     return ip
 
+@csrf_exempt
+def rescan_coverage(request):
+  os.remove(settings.LIDEX_COVERAGE_INDEX_PATH)
+  cmd = "pdal tindex create --tindex '{index}'  -f {format} --t_srs='{srs}' --a_srs='{srs}' --lyr_name pdal {input}".format(
+     index = settings.LIDEX_COVERAGE_INDEX_PATH,
+     format = settings.LIDEX_COVERAGE_INDEX_FORMAT,
+     srs = settings.LIDEX_COVERAGE_SRS,
+     input = settings.LIDEX_COVERAGE_FILE_FILTER
+  )
+  
+  args = shlex.split(cmd)
+  with subprocess.Popen(args) as proc:
+      stdout, stderr = proc.communicate()
+  if proc.returncode:
+      return JsonResponse({
+          "res": "KO",
+          "cmd": cmd,
+          "errore": stderr,
+          "result": None
+      })
+  else:
+     return JsonResponse({
+          "res": "OK",
+          "cmd": cmd,
+          "errore": None,
+          "result": stdout
+      })
+
 def get_coverage_extent():
    return gdal.VectorInfo(settings.LIDEX_COVERAGE_INDEX_PATH, format="json", deserialize=True)["layers"][0]["geometryFields"][0]["extent"]
 
@@ -76,6 +115,44 @@ def get_coverage_extent():
 def coverage_extent(request):
    return JsonResponse({"extent": get_coverage_extent()})
 
+@csrf_exempt
+def coverage_layer(request):
+  x1,y1,x2,y2 = get_coverage_extent()
+  jsonext = {
+    "type":"FeatureCollection",
+    "name":"template",
+    "crs":{
+        "type":"name",
+        "properties":{
+          "name":"urn:ogc:def:crs:" + settings.LIDEX_COVERAGE_SRS
+        }
+    },
+    "features":[
+        {
+          "type":"Feature",
+          "properties":{
+              
+          },
+          "geometry":{
+              "type":"Polygon",
+              "coordinates":[
+                [
+                    [ x1,y1],
+                    [ x1,y2],
+                    [ x2,y2],
+                    [ x2,y1],
+                    [ x1,y1]
+                ]
+              ]
+          }
+        }
+    ]
+  }
+
+  #return JsonResponse(jsonext)
+  r = HttpResponse(json.dumps(jsonext), content_type='application/application/geo+json')
+  r['Content-Disposition'] = 'attachment; filename=coverage.geojson'
+  return r
 
 def inside_coverage(p):
    x, y = p
@@ -176,16 +253,13 @@ def raster_sample(request):
   if request.method == 'GET':
     p_raw = request.GET.get('sample')
     p = [float(c) for c in p_raw.split(',')]
-    decode = {
-       "dtm": settings.LIDEX_DTM_PATH,
-       "dsm": settings.LIDEX_DSM_PATH,
-    }
     res = {}
     if p:
       res["point"] = p
       for asset_name, asset_path in decode.items(): #h?
         ds = gdal.Open(asset_path)
-        res[asset_name] = extract_point_from_raster(ds,p)
+        res[asset_name] = extract_point_from_raster(ds, p)
+        print (asset_path)
       res['h'] = res['dsm'] - res['dtm']
       return JsonResponse(res)
     
@@ -314,7 +388,7 @@ def raster_profilo(request,supporto):
       }
 
       for supporto in output.keys():
-        ds = gdal.Open("/coverage/%s.tif" % supporto)
+        ds = gdal.Open(decode[supporto])
         sample = p0
         m = 0
         output[supporto]["wkt"] = "LINESTRING ZM ( "
@@ -377,7 +451,7 @@ def punti(request):
       output_laz, 
       bounds=extent, 
       polygon= wktgeom,
-      #t_srs= settings.LIDEX_COVERAGE_INDEX_SRS,
+      t_srs= settings.LIDEX_COVERAGE_SRS,
       ogrdriver= settings.LIDEX_COVERAGE_INDEX_FORMAT,
       lyr_name= settings.LIDEX_COVERAGE_INDEX_LAYER
     )
@@ -391,7 +465,7 @@ def punti(request):
         "error": None,
         "extent": extent,
         "polygon": wktgeom,
-        "info": json.loads(pdal_info(output_laz)),
+        #"info": json.loads(pdal_info(output_laz)),
         "remote": get_client_ip(request),
         "time": datetime.now().isoformat(),
         "output_dir": settings.LIDEX_SUBPATH + output_dir,
@@ -400,6 +474,8 @@ def punti(request):
 
       with open(os.path.join(output_dir,"metadata.json"), "w") as outf:
         outf.write(json.dumps(metadata))
+      
+      print (metadata)
 
       return JsonResponse(metadata)
     else:

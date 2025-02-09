@@ -110,11 +110,11 @@ export default {
   },
 
   methods: {
-    /**
+    /** 
      * This function is called once the map is bound to the application
      */
     onMapBound () {
-      this.olMapCtrl = new OlPolygonSelection(this.map, 'EPSG:7792', parseInt(process.env.VUE_APP_MAX_CLOUD_POINTS) / 50) // , this.$attrs);
+      this.olMapCtrl = new OlPolygonSelection(this.map, process.env.VUE_APP_INTERFACE_SRS, parseInt(process.env.VUE_APP_MAX_CLOUD_POINTS) / 50) // , this.$attrs);
       this.olMapCtrl.createSelectionLayer();
       this.rawExtractionLayer = undefined;
     },
@@ -165,7 +165,11 @@ export default {
       axios.post(url, { extent: undefined, geom: me.wkt })
         .then(response => {
           console.log(response.data)
-          me.response = response.data
+          if ( typeof response.data === 'string' || response.data instanceof String) {
+            me.response = JSON.parse(response.data)
+          } else {
+            me.response = response.data
+          }
           WguEventBus.$emit('app-loading-mask-toggle', false);
         }).catch(console.error)
     }

@@ -5,48 +5,37 @@ A Django app for easy publishing and serving human friendly extraction of point 
 ## Build docker containers
 
 ```
-docker build -t lidex_webapp:latest .
-docker build -t lidex_qgis:latest ./build_qgis
-docker build -t lidex_nginx:latest ./build_nginx
-docker build -t lidex_mapproxy:latest ./build_mapproxy
-docker build -t lidex_frontend_dev:latest -f ./wegue/Dockerfile_dev ./wegue
+docker compose build
 ```
 
+
+## Copy coverage data
+
+Copy the point cloud coverage and dtm/dsm raster data inside .data/coverage folder
+
+A test coverage is available in `test_coverage` folder
+
+```
+mv test_coverage/* data/coverage/
+```
 
 ## Configuration
 
-- add `'lidex'` to INSTALLED_APPS in settings.py webapp
+- edit config file
 
-- include 'urls.py' to webapp
+  `nano .env`
 
-- Add to settings.py lidex defaults
+- edit webgis default config (ref: [wegue configuration](https://wegue-oss.github.io/wegue/#/wegue-configuration))
 
-```
-# point cloud tile index made by pdal tindex create ...
-LIDEX_COVERAGE_INDEX_PATH = "/coverage/index.sqlite"
-# tile index og22ogr format
-LIDEX_COVERAGE_INDEX_FORMAT = "SQLite"
-# tile index layer
-LIDEX_COVERAGE_INDEX_LAYER = "pdal"
-# point cloud and dsm/dtm srid
-LIDEX_COVERAGE_INDEX_SRS = "EPSG:7792"
-# output directory
-LIDEX_OUTPUT_DIR = "/output"
-# subpath in url
-LIDEX_SUBPATH = "/lidex"
-# dsm raster location
-LIDEX_DSM_PATH = "/coverage/dsm.tif"
-# dtm raster location
-LIDEX_DTM_PATH = "/coverage/dtm.tif"
-# sampling distance along section line
-LIDEX_PROFILE_SAMPLING = 0.2
-# pdal command path
-LIDEX_PDAL_EXE = '/opt/conda/bin/pdal'
-# potree converter command path
-LIDEX_POTREECONVERTER_EXE = "/opt/PotreeConverter/build/PotreeConverter"
-```
+  `nano wegue_custom_app/wegue_custom/static/app-conf.json`
 
-## endpoints
+## Start Service
+
+  ```
+  docker compose up -d
+  ```
+
+## Endpoints
 
 - #### raster sampling
 

@@ -132,7 +132,7 @@ export default {
 
         this.drawLine.on('drawend', function (event) {
           const profileLine = event.feature.getGeometry()
-          //profileLine.transform('EPSG:32632', 'EPSG:7792')
+          profileLine.transform(process.env.VUE_APP_INTERFACE_SRS, process.env.VUE_APP_COVERAGE_SRS)
           const coords = profileLine.getCoordinates()
           console.log(coords)
           console.log('drawend', coords)
@@ -141,7 +141,7 @@ export default {
             .then(response => {
               console.log(response)
               me.response = response.data
-              const converter = new WKT({ dataProjection: 'EPSG:7792', featureProjection: 'EPSG:7792' })
+              const converter = new WKT({ dataProjection: process.env.VUE_APP_COVERAGE_SRS, featureProjection: process.env.VUE_APP_INTERFACE_SRS })
               const dtmfeat = converter.readFeature(response.data.output.dtm.wkt)
               const dsmfeat = converter.readFeature(response.data.output.dsm.wkt)
               me.profileOk = true

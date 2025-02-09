@@ -92,13 +92,14 @@ export default {
 
   mounted () {
     console.log('MOUNTED start menu', this.exclusions)
+    console.log('SRS', process.env.VUE_APP_INTERFACE_SRS, process.env.VUE_APP_COVERAGE_SRS)
     const me = this
     const url = process.env.VUE_APP_LIDEX + 'coverage_extent/'
-      axios.get(url)
-        .then(response => {
-          console.log(response)
-          me.map.getView().fit(response.data.extent)
-        }).catch(console.error)
+    axios.get(url)
+      .then(response => {
+        console.log("url", response.data)
+        me.map.getView().fit(response.data.extent)
+      }).catch(console.error)
   },
 
   methods: {
@@ -115,6 +116,7 @@ export default {
         exclusions.push(exclude)
       }
       Object.keys(this.$options.components).forEach(element => {
+        console.log("ELEMENT ->", element)
         if (!exclusions.includes(element) && this.items.includes(element.replace('-win', ''))) {
           menuComponents.push(element.replace('-win', ''))
         }

@@ -19,7 +19,7 @@
   }
 },
 
-  "logo": "/dbtman/static/logopd.png",
+  "logo": "",
   "logoSize": 100,
   "showCopyrightYear": true,
 
@@ -31,94 +31,46 @@
     "fallback": "it"
   },
 
-  "mapZoom": 11,
-  "mapCenter": [ 267411,5019199],
+  "mapZoom": 14,
+  "mapCenter": [724881,5031178],
   "mapProjection": {
-    "code": "EPSG:7792",
-    "units": "m",
-    "extent": [264732.0113,5017863.5858,269364.5573,5020819.6858]
+    "code": "${LIDEX_INTERFACE_SRS}",
+    "units": "m"
   },
 
   "projectionDefs": [
     [
-      "EPSG:7792",
-      "+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs"
+      "${LIDEX_INTERFACE_SRS}",
+      "${LIDEX_INTERFACE_DEF}"
     ],
     [
-      "EPSG:32632",
-      "+proj=utm +zone=32 +datum=WGS84 +units=m +no_defs"
-    ],
-    [
-      "EPSG:25832",
-      "+proj=utm +zone=32 +ellps=GRS80 +units=m +no_defs"
+      "${LIDEX_COVERAGE_SRS}",
+      "${LIDEX_COVERAGE_DEF}"
     ]
   ],
 
   "mapLayers": [
     {
-      "type": "WMS",
-      "name": "Ortofoto 2024",
-      "format": "image/jpeg",
-      "url": "http://localhost/qgisserver/?MAP=/data/services/coverage.qgz",
-      "lid": "PVS24_ortho",
-      "isBaseLayer": true,
-      "visible": true,
-      "projection": "EPSG:25832",
-      "layers": "PVS24_ortho",
-      "crossOrigin": "anonymous"
-    },
-    {
-      "type": "WMS",
-      "name": "CTRN",
-      "format": "image/png",
-      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
-      "lid": "CTRN",
-      "isBaseLayer": true,
-      "visible": false,
-      "projection": "EPSG:32632",
-      "layers": "rv:ctrr",
-      "crossOrigin": "anonymous"
-    },
-    {
-      "type": "WMS",
-      "name": "Ortofoto 2021",
-      "format": "image/png",
-      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
-      "lid": "ORTOFOTO2021",
-      "isBaseLayer": true,
-      "visible": false,
-      "projection": "EPSG:32632",
-      "layers": "ortofoto_2021",
-      "crossOrigin": "anonymous"
-    },
-    {
-      "type": "WMS",
-      "name": "Ortofoto 2018",
-      "format": "image/png",
-      "url": "https://idt2.regione.veneto.it/idt/geo/wms",
-      "lid": "ORTOFOTO2018",
-      "isBaseLayer": true,
-      "visible": false,
-      "projection": "EPSG:32632",
-      "layers": "rv:Ortofoto2018_Veneto",
-      "crossOrigin": "anonymous"
-    },
-    {
       "type": "OSM",
       "lid": "osm-bg",
       "isBaseLayer": true,
-      "visible": false,
+      "visible": true,
       "crossOrigin": "anonymous"
     },
     {
-      "type": "WMS",
-      "name": "Nessuna base",
-      "format": "image/png",
-      "url": "",
-      "lid": "nobase",
-      "isBaseLayer": true,
-      "layers": "",
-      "crossOrigin": "anonymous"
+      "type": "VECTOR",
+      "lid": "Coverage",
+      "url": "/lidex/coverage_layer/",
+      "formatConfig": {
+      },
+      "format": "GeoJSON",
+      "visible": true,
+      "selectable": false,
+      "projection": "${LIDEX_INTERFACE_DEF}",
+      "style": {
+        "strokeColor": "orange",
+        "strokeWidth": 4
+      }
     }
   ],
   "modules": {
@@ -247,9 +199,10 @@
   "permalink": {
     "location": "hash",
     "layers": true,
-    "extent": false,
-    "projection": "EPSG:4326",
+    "extent": true,
+    "projection": "$LIDEX_INTERFACE_SRS",
     "paramPrefix": "",
+    "precision": 2,
     "history": true
   },
   "overviewMap": {
