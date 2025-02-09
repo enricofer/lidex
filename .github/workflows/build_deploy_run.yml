@@ -1,0 +1,34 @@
+name: Build and run lidex Docker 
+
+on:
+  # Trigger the workflow on push or pull request,
+  # but only for the master branch
+  push:
+    branches:
+      - master
+      - packaging
+  pull_request:
+    branches:
+      - master
+      - packaging
+
+jobs: 
+  build_and_run:  
+    runs-on: ubuntu-latest
+    steps: 
+    -  uses: actions/checkout@v2
+
+    -  name: WEBAPP build
+       run: docker compose build
+
+    -  name: DEPLOY
+       run: docker compose up -d
+
+    -  name: CHECK HEALTH
+       run: timeout 240s sh -c 'until docker ps | grep lidex-lidex_nginx | grep -q healthy; do echo "Waiting for container to be healthy..."; sleep 2; done'
+
+    -  name: STOP
+       run: docker compose down
+      
+
+   

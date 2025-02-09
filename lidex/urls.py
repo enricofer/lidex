@@ -16,6 +16,8 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, re_path
+from django.http import HttpResponse
+
 from views import (
     globmap, 
     punti, 
@@ -39,4 +41,5 @@ urlpatterns = [
     re_path('^lidex/coverage_extent/$', coverage_extent, name="coverage_extent"),
     re_path('^lidex/coverage_layer/$', coverage_layer, name="coverage_layer"),
     re_path('^lidex/rescan/$', rescan_coverage, name="rescan"),
+    re_path('^lidex/healthcheck/$', lambda r: HttpResponse())
 ]

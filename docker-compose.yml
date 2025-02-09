@@ -69,6 +69,12 @@ services:
       - lidex_webapp
       - lidex_qgisserver
       - lidex_webgis_dev
+    healthcheck:
+      test: wget -qO- http://localhost/lidex/healthcheck/ || exit 1
+      start_period: 30s
+      interval: 60s
+      timeout: 10s
+      retries: 10
 
   lidex_test_nginx:
     image: lidex_nginx:latest
