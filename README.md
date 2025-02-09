@@ -38,7 +38,19 @@ mv test_coverage/* data/coverage/
   docker compose up -d
   ```
 
+## Scan for coverage updates
+
+  open in browser to update coverage index
+  
+  ```
+  [webapp base url]/lidex/rescan/
+  ```
+
 ## Endpoints
+
+- #### rescan .laz/.las coverage for updates
+
+  `[webapp base url]/lidex/rescan/` returns json results]
 
 - #### raster sampling
 
