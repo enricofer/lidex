@@ -18,6 +18,9 @@ jobs:
     steps: 
     -  uses: actions/checkout@v2
 
+    -  name: WEBAPP config
+       run: cp .env_template .env
+
     -  name: WEBAPP build
        run: docker compose build
 

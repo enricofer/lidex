@@ -8,7 +8,6 @@ A Django app for easy publishing and serving human friendly extraction of point 
 docker compose build
 ```
 
-
 ## Copy coverage data
 
 Copy the point cloud coverage and dtm/dsm raster data inside .data/coverage folder
@@ -20,6 +19,10 @@ mv test_coverage/* data/coverage/
 ```
 
 ## Configuration
+
+- copy enviroment variables template
+
+  `cp .env_template .env`
 
 - edit config file
 

@@ -27,6 +27,8 @@ RUN npm install jsonp
 RUN npm install eslint -g -D
 RUN eslint --init
 
+RUN npm install -g json
+
 #COPY . .
 #RUN npm run init:app
 EXPOSE 8081
