@@ -162,9 +162,9 @@ export default {
         this.resolution = options.resolution
         this.scaleLine = new ScaleLine({ bar: true, text: true, minWidth: 200 });
         this.map.addControl(this.scaleLine)
-        let currentCenter
+        // let currentCenter
         if (options.center) {
-          currentCenter = this.map.getView().getCenter()
+          this.currentCenter = this.map.getView().getCenter()
           this.map.getView().setCenter(options.center)
         }
       }
@@ -246,7 +246,7 @@ export default {
             me.map.removeControl(me.scaleLine);
             me.scaleLine = undefined;
             if (me.center){
-              me.map.getView().setCenter(currentCenter)
+              me.map.getView().setCenter(me.currentCenter)
             }
           }
         });

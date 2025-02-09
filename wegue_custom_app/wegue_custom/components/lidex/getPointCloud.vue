@@ -110,7 +110,7 @@ export default {
   },
 
   methods: {
-    /** 
+    /**
      * This function is called once the map is bound to the application
      */
     onMapBound () {
@@ -165,7 +165,7 @@ export default {
       axios.post(url, { extent: undefined, geom: me.wkt })
         .then(response => {
           console.log(response.data)
-          if ( typeof response.data === 'string' || response.data instanceof String) {
+          if (typeof response.data === 'string' || response.data instanceof String) {
             me.response = JSON.parse(response.data)
           } else {
             me.response = response.data
