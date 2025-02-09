@@ -101,6 +101,7 @@ def rescan_coverage(request):
           "result": None
       })
   else:
+     os.chmod(settings.LIDEX_COVERAGE_INDEX_PATH, 0o777)
      return JsonResponse({
           "res": "OK",
           "cmd": cmd,
