@@ -1,0 +1,3 @@
+[submodule "wegue"]
+	path = wegue
+	url = https://github.com/wegue-oss/wegue.git

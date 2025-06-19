@@ -1,0 +1,742 @@
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="chrome=1">
+    <meta name="viewport" content="initial-scale=1.0, user-scalable=no, width=device-width">
+    <link rel="stylesheet" href="https://maxcdn.bootstrapcdn.com/bootstrap/3.3.6/css/bootstrap.min.css" type="text/css">
+    <link rel="stylesheet" href="https://openlayers.org/en/v4.6.5/examples/resources/layout.css" type="text/css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/ol3/4.6.5/ol.css" />
+    <link rel="stylesheet" href="https://unpkg.com/ol-popup@2.0.0/src/ol-popup.css">
+    <!-- ol-ext -->
+    <link rel="stylesheet" href="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.css" />
+    <style id=theStyleElement>
+
+
+
+      .ol-dragbox {
+        border-color: blue;
+      }
+
+      .fullscreen:-moz-full-screen {
+        height: 100%;
+      }
+      .fullscreen:-webkit-full-screen {
+        height: 100%;
+      }
+      .fullscreen:-ms-fullscreen {
+        height: 100%;
+      }
+
+      .fullscreen:fullscreen {
+        height: 100%;
+      }
+
+      .html .body .map .fullscreen {
+        margin-bottom: 10px;
+        width: 100%;
+        height: 100%;
+      }
+
+      .ol-rotate {
+        top: 3em;
+      }
+
+      .map {
+        width: 80%;
+        height: 100%;
+        float: left;
+      }
+
+      .sidepanel {
+        background: #1F6B75;
+        width: 20%;
+        height: 100%;
+        float: left;
+        padding: 10px;
+        display: grid;
+        grid-template-rows: auto 1fr auto;
+      }
+
+      .sidepanel-title {
+        width: 100%;
+        font-size: 1.5em;
+        color: #ffffff;
+        display: block;
+        text-align: left;
+      }
+
+      .sidepanel-subtitle {
+        width: 100%;
+        font-size: 1.1em;
+        color: #ffffff;
+        display: block;
+        text-align: left;
+      }
+
+      .sidepanel-buttons {
+        width: 100%;
+        padding: 10px;
+      }
+
+      .sidepanel-buttons.checked {
+        background-color: rgb(141, 140, 140);
+      }
+
+      .hidden {
+        display: none;
+      }
+
+      .busy {
+        width: 100%;
+        height: 70px;
+        background-image: url('https://remix.run/loading.gif');
+        background-repeat: no-repeat;
+        background-position: center;
+        background-size: 45px;
+      }
+
+      .ol-attribution ul {
+        font-size: 0.6em;
+      }
+
+      #profili_panel {
+        width: 100%;
+        min-height: 400px;
+        font-size: 10px !important;
+        background-color: beige;
+        margin-top: 10px;
+      }
+
+      #opt1 ,#opt2 ~ *  {
+        font-size: 10px !important;
+      }
+
+    </style>
+    <script type="text/javascript" src="https://cdnjs.cloudflare.com/ajax/libs/openlayers/4.6.5/ol-debug.js"></script>
+    <script type="text/javascript" src="https://cdn.rawgit.com/Viglino/ol-ext/master/dist/ol-ext.min.js"></script>
+    <!-- filesaver-js -->
+    <script type="text/javascript" src="https://cdn.rawgit.com/eligrey/FileSaver.js/aa9f4e0e/FileSaver.min.js"></script>
+    <script src="https://unpkg.com/ol-popup@2.0.0"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/proj4js/2.2.1/proj4.js"></script>
+    <script src="http://epsg.io/{{ srid }}.js"></script>
+    <script src="https://unpkg.com/@alenaksu/json-viewer@2.0.0/dist/json-viewer.bundle.js"></script>
+  </head>
+  <body>
+    <div id="fullscreen" class="fullscreen">
+      <div id="map" class="map"></div>
+      <div class="sidepanel">
+        <header>
+          <span class="sidepanel-title">Comune di Piove di Sacco</span>
+          <span class="sidepanel-subtitle">Rilievo 2024</span>
+          <span class="sidepanel-subtitle"></span>
+          <button class="sidepanel-buttons" id="disegna_profilo" checked="">Profili da DTM - DSM</button>
+          <button class="sidepanel-buttons" id="seleziona_b" checked="">Point cloud da finestra</button>
+          <button class="sidepanel-buttons" id="seleziona_p" checked="">Point cloud da poligono</button>
+        </header>
+        <article>
+          <div class="busy hidden" id="busy"></div>
+          <button class="sidepanel-buttons hidden" id="placeholder">placeholder</button>
+        </article>
+        <footer>
+          <div class="" id="risultati">
+            <button class="sidepanel-buttons hidden" id="download_profilo">Download profilo DXF</button>
+            <json-viewer id="view"></json-viewer>
+            <button class="sidepanel-buttons hidden" id="download">Download point cloud (.laz)</button>
+            <button class="sidepanel-buttons hidden" id="modello">Visualizza modello</button>
+            <button class="sidepanel-buttons hidden" id="licenza">Licenza d'uso CC BY 4.0 Deed</button>
+          </div>
+          <div id="profili_panel" class="profili hidden">
+            <div id="opt1" class="options">
+            </div>
+            <div id="opt2" class="options">
+            </div>
+          </div>
+        </footer>
+      </div>
+    </div>
+
+
+    <script>
+      var RDN2008UTM33_ext = [182293.8863519125152379,1992757.4727728092111647, 2629600.1400186931714416,5409638.5214586956426501];
+      proj4.defs('EPSG:7792', '+proj=utm +zone=33 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+      var RDN2008UTM33_proj = new ol.proj.Projection({
+          code: 'EPSG:7792',
+          worldExtent: [12.0, 34.79, 18.0, 47.1] 
+      });
+      ol.proj.addProjection(RDN2008UTM33_proj);
+    
+      console.log(RDN2008UTM33_proj.getExtent())
+      
+      var risposta
+      var pFeat
+      var tileSizePixels = 256;
+      var tileSizeMtrs = ol.extent.getWidth(RDN2008UTM33_ext) / tileSizePixels;
+      var matrixIds = [];
+      var resolutions = [];
+      for (var i = 0; i <= 14; i++) {
+        matrixIds[i] = i;
+        resolutions[i] = tileSizeMtrs / Math.pow(2, i);
+      }
+      var tileGrid = new ol.tilegrid.WMTS({
+        origin: ol.extent.getTopLeft(RDN2008UTM33_ext),
+        resolutions: resolutions,
+        matrixIds: matrixIds
+      });
+
+
+      var UTM32Extent = [166021.44, 0.0, 833978.56, 9329005.18];
+      proj4.defs('EPSG:32632', '+proj=utm +zone=32 +datum=WGS84 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+      var UTM32proj = new ol.proj.Projection({
+          code: 'EPSG:32632',
+          worldExtent: [6.0, 0.0, 12.0, 84.0]
+      });
+      ol.proj.addProjection(UTM32proj);
+
+        var ETRS89Extent = [719459.961,5024860.053, 733523.921,5038269.875];
+        proj4.defs('EPSG:25832', '+proj=utm +zone=32 +ellps=GRS80 +towgs84=0,0,0,0,0,0,0 +units=m +no_defs');
+        var ETRS89proj = new ol.proj.Projection({
+            code: 'EPSG:25832',
+            worldExtent: [6.0, 36.53, 12.01, 84.01]
+        });
+        ol.proj.addProjection(ETRS89proj);
+
+      var vview = new ol.View({
+        center: [267453, 5018806],
+        zoom: 5,
+        projection: RDN2008UTM33_proj,
+      });
+
+      const confine = { "type": "Feature", "properties": { "codistat": "28065", "nomcom": "Piove di Sacco", "provincia": "PD", "area": 35657647.265943386, "perimetro": 48530.41, "id1": 141 }, "geometry": { "type": "MultiPolygon", "coordinates": [ [ [ [ 270421.44, 5018160.43 ], [ 270348.03, 5018191.39 ], [ 270348.24, 5018130.83 ], [ 270256.59, 5018183.08 ], [ 270186.38, 5018166.92 ], [ 270215.86, 5018083.66 ], [ 270273.02, 5018035.78 ], [ 270219.06, 5017920.97 ], [ 270170.56, 5017930.26 ], [ 270194.23, 5018019.32 ], [ 269964.41, 5018083.77 ], [ 269990.77, 5018170.74 ], [ 269972.8, 5018183.43 ], [ 269917.6, 5018204.57 ], [ 269872.38, 5018080.22 ], [ 269564.42, 5018264.03 ], [ 269471.94, 5018267.14 ], [ 269476.58, 5018291.39 ], [ 269422.64, 5018303.93 ], [ 269364.37, 5018347.06 ], [ 269386.04, 5018422.08 ], [ 269283.41, 5018466.64 ], [ 269222.47, 5018283.85 ], [ 269134.85, 5018314.04 ], [ 269139.34, 5018374.25 ], [ 269026.92, 5018389.27 ], [ 268981.36, 5018412.53 ], [ 268652.07, 5018399.24 ], [ 268604.71, 5018385.74 ], [ 268585.15, 5018301.11 ], [ 268431.52, 5018334.32 ], [ 268412.06, 5018301.71 ], [ 268359.38, 5018305.64 ], [ 268318.73, 5018141.22 ], [ 268268.51, 5018140.24 ], [ 268272.4, 5018179.68 ], [ 268096.46, 5018192.81 ], [ 268116.5, 5018068.32 ], [ 268094.37, 5018063.34 ], [ 268003.04, 5018069.21 ], [ 268030.11, 5018254.52 ], [ 267939.29, 5018254.67 ], [ 267937.14, 5018060.88 ], [ 267844.42, 5018073.47 ], [ 267766.41, 5017915.6 ], [ 267624.5, 5017953.63 ], [ 267596.05, 5017863.98 ], [ 267583.8, 5017750.41 ], [ 267492.48, 5017439.33 ], [ 267491.0, 5017419.57 ], [ 267518.98, 5017401.4 ], [ 267449.46, 5017268.45 ], [ 267409.18, 5017286.59 ], [ 267431.65, 5017334.11 ], [ 267402.46, 5017348.59 ], [ 267358.79, 5017270.48 ], [ 267399.51, 5017245.68 ], [ 267277.55, 5017043.79 ], [ 267326.09, 5017022.2 ], [ 267302.77, 5016963.39 ], [ 267238.42, 5016975.75 ], [ 267170.52, 5016864.45 ], [ 267265.11, 5016826.17 ], [ 267227.0, 5016721.15 ], [ 267287.76, 5016698.65 ], [ 267192.39, 5016421.92 ], [ 267227.63, 5016272.65 ], [ 267200.12, 5016182.92 ], [ 267223.2, 5016149.99 ], [ 267177.46, 5015942.41 ], [ 267104.25, 5015836.22 ], [ 267073.83, 5015669.14 ], [ 267103.58, 5015662.19 ], [ 267102.63, 5015636.71 ], [ 267052.1, 5015433.12 ], [ 266735.23, 5015505.83 ], [ 266699.74, 5015501.5 ], [ 266627.25, 5015441.27 ], [ 266575.13, 5015419.86 ], [ 266293.9, 5015450.82 ], [ 266182.95, 5015416.94 ], [ 266140.83, 5015435.01 ], [ 266069.5, 5015513.1 ], [ 266003.98, 5015544.93 ], [ 265929.77, 5015536.61 ], [ 265853.32, 5015503.52 ], [ 265696.2, 5015514.83 ], [ 265644.76, 5015557.76 ], [ 265561.17, 5015573.21 ], [ 265350.26, 5015722.15 ], [ 265407.06, 5016269.31 ], [ 265386.36, 5016270.85 ], [ 265425.99, 5016371.02 ], [ 265604.4, 5016327.44 ], [ 265709.82, 5016332.83 ], [ 265776.95, 5016307.01 ], [ 265802.29, 5016519.89 ], [ 265830.64, 5016620.91 ], [ 265728.0, 5016691.0 ], [ 265694.41, 5016760.68 ], [ 265600.31, 5016831.09 ], [ 265526.82, 5016974.71 ], [ 265527.18, 5017004.95 ], [ 265598.87, 5017141.53 ], [ 265492.7, 5017176.88 ], [ 265370.31, 5017185.07 ], [ 265422.9, 5017255.89 ], [ 265455.08, 5017268.62 ], [ 265323.58, 5017332.37 ], [ 265363.04, 5017417.41 ], [ 265271.63, 5017485.73 ], [ 265256.49, 5017523.76 ], [ 265333.49, 5017490.57 ], [ 265408.86, 5017625.92 ], [ 265460.57, 5017608.82 ], [ 265550.54, 5017787.56 ], [ 265524.31, 5017803.7 ], [ 265611.87, 5017861.52 ], [ 265684.22, 5017867.47 ], [ 265773.37, 5018149.39 ], [ 265797.01, 5018314.15 ], [ 265920.99, 5018428.84 ], [ 265901.92, 5018629.9 ], [ 265918.72, 5018690.15 ], [ 265860.9, 5018752.17 ], [ 265734.81, 5018736.04 ], [ 265597.37, 5018745.34 ], [ 265680.47, 5018920.8 ], [ 265687.42, 5019013.95 ], [ 265722.29, 5019075.69 ], [ 265774.84, 5019069.87 ], [ 265839.27, 5019185.22 ], [ 265933.49, 5019217.93 ], [ 266035.12, 5019451.62 ], [ 266080.87, 5019443.47 ], [ 266133.8, 5019493.45 ], [ 266006.08, 5019620.31 ], [ 266119.74, 5019723.47 ], [ 266096.83, 5019771.54 ], [ 265884.19, 5019914.19 ], [ 265753.08, 5019970.33 ], [ 265741.83, 5019984.41 ], [ 265750.4, 5020061.35 ], [ 265664.61, 5020116.0 ], [ 265814.52, 5020375.42 ], [ 265828.28, 5020433.05 ], [ 265732.77, 5020446.46 ], [ 265614.29, 5020490.11 ], [ 265570.2, 5020550.25 ], [ 265470.85, 5020604.18 ], [ 265484.25, 5020659.01 ], [ 265352.69, 5020724.64 ], [ 265401.17, 5020889.52 ], [ 265633.0, 5020942.85 ], [ 265129.11, 5021157.38 ], [ 265198.88, 5021295.35 ], [ 265127.77, 5021312.03 ], [ 265166.18, 5021452.84 ], [ 265175.29, 5021547.26 ], [ 265154.51, 5021555.11 ], [ 265244.15, 5021721.99 ], [ 265354.24, 5021673.45 ], [ 265412.22, 5021827.29 ], [ 265505.26, 5021799.67 ], [ 265591.06, 5021955.93 ], [ 265638.4, 5021952.4 ], [ 265669.61, 5021932.22 ], [ 265710.05, 5021831.58 ], [ 265783.96, 5021863.63 ], [ 265859.54, 5021865.23 ], [ 266007.07, 5021722.95 ], [ 266029.38, 5021717.14 ], [ 266131.0, 5021846.01 ], [ 266209.52, 5021803.97 ], [ 266327.18, 5021967.81 ], [ 266268.13, 5022035.28 ], [ 266322.97, 5022098.69 ], [ 266336.39, 5022091.17 ], [ 266390.37, 5022129.68 ], [ 266291.25, 5022240.4 ], [ 266268.14, 5022298.69 ], [ 266200.57, 5022389.96 ], [ 266067.44, 5022482.84 ], [ 265992.81, 5022571.88 ], [ 265979.19, 5022613.88 ], [ 266006.29, 5022654.35 ], [ 265988.53, 5022679.45 ], [ 266033.82, 5022718.46 ], [ 266014.01, 5022771.62 ], [ 265874.88, 5022971.17 ], [ 265835.61, 5023068.17 ], [ 265762.37, 5023153.22 ], [ 265874.37, 5023199.65 ], [ 265804.65, 5023332.0 ], [ 265793.76, 5023393.8 ], [ 265657.56, 5023383.29 ], [ 265547.46, 5023403.91 ], [ 265493.42, 5023386.24 ], [ 265427.45, 5023471.79 ], [ 265442.82, 5023497.52 ], [ 265441.12, 5023544.16 ], [ 265669.01, 5023633.62 ], [ 265687.49, 5023604.34 ], [ 265797.7, 5023640.56 ], [ 265732.35, 5023803.59 ], [ 265722.46, 5023878.75 ], [ 265747.85, 5024011.24 ], [ 265921.31, 5024077.89 ], [ 265934.01, 5024054.2 ], [ 266136.88, 5024165.21 ], [ 266148.68, 5024091.08 ], [ 266292.1, 5023841.21 ], [ 266274.4, 5023595.42 ], [ 266288.46, 5023541.32 ], [ 266304.17, 5023511.46 ], [ 266356.58, 5023487.2 ], [ 266377.29, 5023451.21 ], [ 266416.0, 5023307.96 ], [ 266508.37, 5023121.16 ], [ 266553.0, 5022991.52 ], [ 266620.87, 5022939.83 ], [ 266652.56, 5022864.04 ], [ 266714.22, 5022829.44 ], [ 266801.52, 5022708.09 ], [ 266931.01, 5022583.84 ], [ 267006.1, 5022541.38 ], [ 267062.03, 5022454.04 ], [ 267123.23, 5022417.52 ], [ 267188.08, 5022434.53 ], [ 267258.74, 5022426.51 ], [ 267278.21, 5022451.47 ], [ 267318.73, 5022452.68 ], [ 267387.18, 5022426.06 ], [ 267434.64, 5022360.7 ], [ 267448.79, 5022293.66 ], [ 267540.49, 5022203.76 ], [ 267564.78, 5022055.18 ], [ 267543.72, 5021986.96 ], [ 267568.93, 5021954.76 ], [ 267814.42, 5022112.13 ], [ 267800.94, 5022159.06 ], [ 267888.15, 5022241.53 ], [ 267930.61, 5022313.4 ], [ 267969.93, 5022264.09 ], [ 268024.81, 5022231.33 ], [ 268082.98, 5022231.21 ], [ 268218.97, 5022178.06 ], [ 268220.75, 5022156.85 ], [ 268353.22, 5022124.19 ], [ 268443.37, 5022010.4 ], [ 268515.71, 5021985.61 ], [ 268620.36, 5021874.1 ], [ 268689.18, 5021869.8 ], [ 268740.87, 5021907.26 ], [ 268764.83, 5021889.45 ], [ 268815.39, 5021889.04 ], [ 268787.69, 5021766.33 ], [ 268885.93, 5021726.97 ], [ 268912.94, 5021727.48 ], [ 268933.1, 5021907.24 ], [ 269014.16, 5022044.52 ], [ 268919.26, 5022094.61 ], [ 269003.17, 5022224.92 ], [ 268971.68, 5022266.06 ], [ 269122.78, 5022370.28 ], [ 269217.34, 5022247.72 ], [ 269331.67, 5022356.39 ], [ 269345.7, 5022397.49 ], [ 269401.72, 5022459.07 ], [ 269251.35, 5022601.82 ], [ 269378.14, 5022707.86 ], [ 269406.42, 5022691.41 ], [ 269495.28, 5022774.99 ], [ 269397.49, 5022876.73 ], [ 269418.86, 5022891.99 ], [ 269499.79, 5022801.64 ], [ 269598.49, 5022898.69 ], [ 269988.36, 5022639.78 ], [ 270242.43, 5022594.19 ], [ 270349.24, 5022535.99 ], [ 270267.1, 5022791.59 ], [ 270317.89, 5022828.27 ], [ 270371.75, 5022906.03 ], [ 270502.22, 5023208.23 ], [ 270580.61, 5023332.22 ], [ 270643.62, 5023498.65 ], [ 270705.72, 5023551.35 ], [ 270753.87, 5023530.05 ], [ 270776.34, 5023492.13 ], [ 270817.59, 5023468.81 ], [ 270810.77, 5023433.91 ], [ 270825.12, 5023420.0 ], [ 270983.16, 5023394.07 ], [ 271132.83, 5023930.9 ], [ 271309.47, 5023891.58 ], [ 271475.2, 5023902.75 ], [ 271704.34, 5023850.05 ], [ 271792.44, 5023872.29 ], [ 272062.36, 5023690.26 ], [ 272289.16, 5023594.93 ], [ 272426.75, 5023434.22 ], [ 272485.72, 5023287.43 ], [ 272590.21, 5023233.87 ], [ 272679.23, 5023166.2 ], [ 272803.1, 5023111.19 ], [ 272810.96, 5022977.96 ], [ 272833.13, 5022905.96 ], [ 272922.41, 5022807.76 ], [ 272948.72, 5022757.07 ], [ 272571.94, 5022597.46 ], [ 272607.5, 5022540.13 ], [ 272881.25, 5022437.91 ], [ 272847.94, 5022349.3 ], [ 273417.86, 5021354.99 ], [ 273441.05, 5021302.41 ], [ 273425.11, 5021202.32 ], [ 273512.21, 5021057.67 ], [ 273525.42, 5021002.02 ], [ 273642.44, 5020940.31 ], [ 273752.45, 5020828.87 ], [ 273695.44, 5020726.32 ], [ 273668.0, 5020478.27 ], [ 273570.17, 5020244.43 ], [ 273571.37, 5020069.75 ], [ 273490.49, 5019994.14 ], [ 273471.73, 5019903.48 ], [ 273423.4, 5019835.06 ], [ 273341.7, 5019823.54 ], [ 273137.34, 5019852.39 ], [ 272953.48, 5019834.09 ], [ 272848.76, 5019739.45 ], [ 272764.8, 5019561.74 ], [ 272728.21, 5019687.66 ], [ 272514.2, 5019928.05 ], [ 272330.52, 5019925.71 ], [ 272327.25, 5019905.55 ], [ 272294.09, 5019911.29 ], [ 272016.05, 5019821.57 ], [ 271943.97, 5019831.75 ], [ 271799.55, 5019805.71 ], [ 271738.81, 5019753.41 ], [ 271645.26, 5019733.18 ], [ 271453.17, 5019829.96 ], [ 271366.73, 5019776.36 ], [ 271338.49, 5019784.36 ], [ 271192.41, 5019870.36 ], [ 270981.6, 5019938.87 ], [ 271026.74, 5020073.61 ], [ 270597.52, 5020128.33 ], [ 270575.45, 5020035.38 ], [ 270494.98, 5019882.44 ], [ 270537.06, 5019863.21 ], [ 270426.79, 5019640.59 ], [ 270380.88, 5019659.16 ], [ 270358.5, 5019638.12 ], [ 270223.38, 5019615.09 ], [ 270162.5, 5019623.41 ], [ 270144.2, 5019656.94 ], [ 270121.24, 5019666.22 ], [ 270030.45, 5019654.08 ], [ 269941.6, 5019464.86 ], [ 270062.51, 5019399.08 ], [ 269995.12, 5019256.52 ], [ 270016.47, 5019225.6 ], [ 270029.57, 5019223.67 ], [ 270059.15, 5019290.53 ], [ 270081.23, 5019282.26 ], [ 270090.66, 5019307.1 ], [ 270135.82, 5019303.73 ], [ 270100.16, 5019206.11 ], [ 270012.61, 5019110.46 ], [ 270027.48, 5019094.22 ], [ 270109.49, 5019068.41 ], [ 270151.3, 5019077.06 ], [ 270260.11, 5019201.68 ], [ 270276.5, 5019173.08 ], [ 270211.09, 5019019.02 ], [ 270286.12, 5018959.5 ], [ 270340.49, 5019041.54 ], [ 270479.3, 5018936.58 ], [ 270436.41, 5018894.36 ], [ 270398.88, 5018822.42 ], [ 270498.61, 5018751.6 ], [ 270521.78, 5018745.13 ], [ 270536.29, 5018787.58 ], [ 270615.34, 5018743.83 ], [ 270621.24, 5018696.09 ], [ 270646.11, 5018674.37 ], [ 270750.52, 5018678.88 ], [ 270402.4, 5018336.81 ], [ 270483.38, 5018268.34 ], [ 270421.44, 5018160.43 ] ] ] ] } }
+
+      var testFeats = new ol.Collection( 
+          [new ol.format.GeoJSON().readFeature(
+            confine,
+            {dataProjection:RDN2008UTM33_proj, featureProjection: RDN2008UTM33_proj},
+            )
+          ]
+        )
+
+      var boundOverlay = new ol.layer.Vector({
+        source: new ol.source.Vector({
+          features: testFeats,
+          projection: RDN2008UTM33_proj,
+        }),
+        title: 'contesto test',
+        visible: true,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#FFA500',
+            width: 3,
+          }),
+        }),
+      });
+      
+
+      var selectionOverlay = new ol.layer.Vector({
+        source: new ol.source.Vector(),
+        title: 'selezione',
+        visible: true,
+        style: new ol.style.Style({
+          stroke: new ol.style.Stroke({
+            color: '#0044FF',
+            width: 3,
+          }),
+          fill: new ol.style.Fill({
+            color: 'rgba(255, 255, 255, 0.2)'
+          }),
+          image: new ol.style.Circle({
+            radius: 4,
+            fill: new ol.style.Fill({
+              color: '#0044FF'
+            })
+          })
+        }),
+      });
+      
+      var osm = new ol.layer.Tile({
+        title: 'Openstreetmap',
+        source: new ol.source.OSM(),
+        baseLayer: true,
+        visible: false,
+      })
+
+      var dragBox = new ol.interaction.DragBox({
+      })
+
+      dragBox.on('boxstart', function() {
+        selectionOverlay.getSource().clear()
+        document.getElementById("download").classList.add("hidden")
+        document.getElementById("modello").classList.add("hidden")
+      })
+
+      dragBox.on('boxdrag', function() {
+        const extent = dragBox.getGeometry().getExtent();
+        let area = Math.abs(extent[2]-extent[0])*Math.abs(extent[3]-extent[1])
+        if (area*20 > 2000000) {
+          document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] = 'red'
+        } else {
+          document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] = 'blue'
+        }
+        console.log(area*20)
+      })
+      
+      dragBox.on('boxend', function() {
+        // features that intersect the box are added to the collection of
+        // selected features
+        if (document.getElementById("theStyleElement").sheet.rules[0].style["border-color"] == 'blue') {
+          const extent = dragBox.getGeometry().getExtent();
+          const feature = new ol.Feature({
+            geometry: dragBox.getGeometry(),
+            name: 'Selection',
+          });
+          selectionOverlay.getSource().addFeature(feature)
+          console.log(extent)
+          var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+          xmlhttp.open("POST", "/lidex/punti/");
+          xmlhttp.setRequestHeader("Content-Type", "application/json");
+          xmlhttp.onreadystatechange = function () {
+              console.log("RISPOSTA")
+              if (this.readyState == 4) {
+                //var blob = new Blob([this.response], { type: "application/octet-stream" });
+                //saveAs(blob, "filename.zip");
+                console.log(this.response)
+                risposta = JSON.parse(this.response)
+                if ( !risposta.error ) {
+                  document.getElementById("seleziona_b").click()
+                  document.getElementById("download").classList.remove("hidden")
+                  document.getElementById("modello").classList.remove("hidden")
+                  document.getElementById("licenza").classList.remove("hidden")
+                  document.getElementById("view").classList.remove("hidden");
+                  document.querySelector('#view').data = {info:risposta.info}
+                } else {
+                  selectionOverlay.getSource().clear()
+                }
+                document.getElementById("busy").classList.add("hidden")
+              }
+          };
+        
+          document.getElementById("busy").classList.remove("hidden")
+          xmlhttp.send(JSON.stringify({extent:extent,geom:undefined}));
+        }
+      });
+
+      var selectionColor = 'blue'
+
+      var drawPolygon = new ol.interaction.Draw({
+        //source: selectionOverlay,
+        type: 'Polygon',
+        source: undefined,
+        style: function styleFunction (feature) {
+          return new ol.style.Style({
+              stroke: new ol.style.Stroke({
+                color: selectionColor,
+                width: 3
+              }),
+              fill: new ol.style.Fill({
+                color: 'rgba(255, 255, 255, 0.2)'
+              })
+          })
+        },
+        geometryFunction: function(coordinates, geometry) {
+          //coordinates.push(coordinates[0])
+          //if ( coordinates[0][0][0] !== coordinates[0][coordinates.length][0] ) {
+          //  coordinates[0].push(coordinates[0][0])
+          //}
+          if (coordinates[0].length > 2 ) {
+            controlCoords = JSON.parse(JSON.stringify(coordinates))
+            if ( controlCoords[0][0][0] !== controlCoords[0][controlCoords.length][0] ) {
+              controlCoords[0].push(controlCoords[0][0])
+            }
+            console.log(controlCoords[0])
+            const controlGeom = new ol.geom.Polygon(null,'XY')
+            controlGeom.setCoordinates(controlCoords)
+            let area = controlGeom.getArea()
+            if (area*20 > 2000000) {
+              selectionColor = 'red'
+            } else {
+              selectionColor = 'blue'
+            }
+            console.log(area*20)
+          }
+          
+          if (!geometry) {
+            geometry = new ol.geom.LineString(null);
+          }
+          console.info(coordinates);
+          geometry.setCoordinates(coordinates);
+          return geometry
+        }
+      })
+
+      drawPolygon.on('drawstart', function() {
+        selectionOverlay.getSource().clear()
+        pFeat = undefined
+        document.getElementById("download").classList.add("hidden")
+        document.getElementById("modello").classList.add("hidden")
+      })
+
+      drawPolygon.on('change', function(event) {
+        console.log(event)
+      })
+      
+      drawPolygon.on('drawend', function(event) {
+        // features that intersect the box are added to the collection of
+        // selected features
+        console.log(event.feature)
+        if (selectionColor == 'blue') {
+          let geom = event.feature.getGeometry()
+          let coords = geom.getCoordinates()
+          let ring = coords[0]
+          console.log("EQUALITY", ring[0],ring[ring.length-1][0], ring[0][0] !== ring[ring.length-1][0])
+          if (ring[0][0] !== ring[ring.length-1][0]) {
+            ring.push(ring[0]) 
+            coords =[ring]
+          }
+          const pgeom = new ol.geom.Polygon(coords)
+          let converter = new ol.format.WKT()
+          const wktgeom = converter.writeGeometry(pgeom);
+          console.log(wktgeom)
+          pFeat = new ol.Feature(pgeom)
+          window.selectionOverlay.getSource().addFeature(pFeat)
+          var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+          xmlhttp.open("POST", "/lidex/punti/");
+          xmlhttp.setRequestHeader("Content-Type", "application/json");
+          xmlhttp.onreadystatechange = function () {
+              console.log("RISPOSTA")
+              if (this.readyState == 4) {
+                //var blob = new Blob([this.response], { type: "application/octet-stream" });
+                //saveAs(blob, "filename.zip");
+                console.log(this.response)
+                risposta = JSON.parse(this.response)
+                if ( !risposta.error ) {
+                  document.getElementById("seleziona_p").click()
+                  document.getElementById("download").classList.remove("hidden")
+                  document.getElementById("modello").classList.remove("hidden")
+                  document.getElementById("licenza").classList.remove("hidden")
+                  document.getElementById("view").classList.remove("hidden");
+                  document.querySelector('#view').data = {info:risposta.info}
+
+                } else {
+                  selectionOverlay.getSource().clear()
+                }
+                document.getElementById("busy").classList.add("hidden")
+              }
+          };
+        
+          document.getElementById("busy").classList.remove("hidden")
+          xmlhttp.send(JSON.stringify({extent:undefined,geom:wktgeom}));
+        }
+      });
+
+      var drawLine = new ol.interaction.Draw({
+        //source: selectionOverlay,
+        type: 'LineString',
+        maxPoints: 2,
+        style: function styleFunction (feature) {
+          return new ol.style.Style({
+              stroke: new ol.style.Stroke({
+                color: selectionColor,
+                width: 5
+              })
+          })
+        },
+      })
+
+      drawLine.on('drawstart', function() {
+        selectionOverlay.getSource().clear()
+        document.getElementById("download_profilo").classList.add("hidden")
+      })
+
+      drawLine.on('drawend', function(event) {
+        let geom = event.feature.getGeometry()
+        let coords = geom.getCoordinates()
+        console.log(coords)
+        var xmlhttp = new XMLHttpRequest();   // new HttpRequest instance 
+        xmlhttp.open("POST", "/lidex/profilo/dtm/");
+        xmlhttp.setRequestHeader("Content-Type", "application/json");
+        xmlhttp.onreadystatechange = function () {
+            console.log("RISPOSTA")
+            if (this.readyState == 4) {
+              //var blob = new Blob([this.response], { type: "application/octet-stream" });
+              //saveAs(blob, "filename.zip");
+              console.log(this.response)
+              risposta = JSON.parse(this.response)
+              if ( !risposta.error ) {
+                document.getElementById("disegna_profilo").click()
+                document.getElementById("download_profilo").classList.remove("hidden")
+                document.getElementById("profili_panel").classList.remove("hidden")
+                document.getElementById("licenza").classList.remove("hidden")
+
+                window.selectionOverlay.getSource().clear()
+                let converter = new ol.format.WKT()
+                let dtmfeat = converter.readFeature(risposta.output.dtm.wkt)
+                let dsmfeat = converter.readFeature(risposta.output.dsm.wkt)
+                feature = dtmfeat
+                window.selectionOverlay.getSource().addFeature(dtmfeat)
+                profil.setGeometry(dtmfeat, {
+                  graduation:50,
+                  zmin:0
+                });
+                profil2.setGeometry(dsmfeat, {
+                  graduation:50,
+                  zmin:0
+                });
+                pt = new ol.Feature(new ol.geom.Point([0,0]));
+                pt.setStyle([]);
+                window.selectionOverlay.getSource().addFeature(pt);
+              } else {
+                selectionOverlay.getSource().clear()
+              }
+              document.getElementById("busy").classList.add("hidden")
+            }
+        };
+      
+        document.getElementById("busy").classList.remove("hidden")
+        xmlhttp.send(JSON.stringify({line:coords}));
+
+      })
+
+      var map = new ol.Map({
+        controls: ol.control.defaults().extend([
+            new ol.control.MousePosition(),
+        ]),
+        layers: [
+            osm,
+        ],
+        target: 'map',
+        view: vview
+      });
+
+      map.getView().fit(boundOverlay.getSource().getExtent(), map.getSize());
+
+      map.addControl(new ol.control.LayerPopup())
+
+      var profil = new ol.control.Profil({
+        target: document.getElementById("opt1"),
+        selectable: true,
+        zoomable: true,
+        style: new ol.style.Style({
+          fill: new ol.style.Fill({ color: '#ccc' })
+        }),
+        title:"DTM",
+        width:300, height:150
+      });
+
+      var profil2 = new ol.control.Profil({
+        target: document.getElementById("opt2"),
+        selectable: true,
+        zoomable: true,
+        style: new ol.style.Style({
+          fill: new ol.style.Fill({ color: '#ccc' })
+        }),
+        title:"DSM",
+        width:300, height:150
+      });
+
+      map.addControl(profil);
+      map.addControl(profil2);
+      var pt, feature
+      // Draw a point on the map when mouse fly over profil
+      function drawPoint(e) {
+          if (!pt) return;
+          if (e.type=="over"){
+            // Show point at coord
+            pt.setGeometry(new ol.geom.Point(e.coord));
+            pt.setStyle(null);
+          } else {
+            // hide point
+            pt.setStyle([]);
+          }
+        };
+        // Show a popup on over
+        profil.on(["over","out"], function(e) {
+          if (e.type=="over") profil.popup(e.coord[2]+" m");
+          drawPoint(e);
+          profil2.showAt(e.distance)
+        });
+        profil2.on(["over","out"], function(e) {
+          if (e.type=="over") profil.popup(e.coord[2]+" m");
+          drawPoint(e);
+          profil.showAt(e.distance)
+        });
+
+        var hover = new ol.interaction.Hover({ 
+          cursor: "pointer", 
+          hitTolerance:10,
+          layers:[selectionOverlay]
+        });
+        map.addInteraction(hover);
+        hover.on("hover", function(e) {
+          // Point on the line
+          if (!feature) return
+          var c = feature.getGeometry().getClosestPoint(e.coordinate)
+          drawPoint({ type: "over", coord: c });
+          // Show profil
+          var p = profil.showAt(e.coordinate);
+          profil.popup(p[2]+" m");
+          profil2.showAt(e.coordinate);
+        });
+        hover.on("leave", function(e) {
+          profil.popup();
+          profil.showAt();
+          profil2.showAt();
+          drawPoint({});
+        });
+
+      const parser = new ol.format.WMTSCapabilities();
+
+      fetch('https://idt2.regione.veneto.it/gwc/service/wmts?SERVICE=WMTS&REQUEST=GetCapabilities')
+      .then(function (response) {
+        return response.text();
+      })
+      .then(function (text) {
+        const capabilities = parser.read(text);
+        var ortofoto_2021 = new ol.layer.Tile({
+          title: 'Ortofoto 2021',
+          visible: true,
+          baseLayer: true,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'ortofoto_2021',
+            projection: UTM32proj,
+            matrixSet: 'EPSG:32632',
+          }))
+        })       
+
+        var ortofoto_2018= new ol.layer.Tile({
+          title: 'Ortofoto 2018',
+          visible: false,
+          baseLayer: true,
+          source: new ol.source.WMTS(ol.source.WMTS.optionsFromCapabilities(capabilities, {
+            layer: 'rv:Ortofoto2018_Veneto',
+            projection: UTM32proj,
+            matrixSet: 'EPSG:32632',
+          }))
+        })
+
+        let attrib = ['<a href="https://creativecommons.org/licenses/by/4.0/deed.it" target="_blank">2023 Comune di Padova - Settore Urbanistica e servizi catastali</a>']
+        ortofoto_2021.getSource().setAttributions(attrib) 
+        ortofoto_2018.getSource().setAttributions(attrib)
+
+        var ortofoto_2018_wms = new ol.layer.Tile({
+          title: 'Ortofoto 2018',
+          visible: false,
+          baseLayer: true,
+          source: new ol.source.TileWMS({
+            url: 'https://idt2.regione.veneto.it/idt/geo/wms',
+            projection: UTM32proj,
+            params: {layers: 'rv:Ortofoto2018_Veneto',format:'image/jpeg'}
+        })
+        })
+          
+
+        var ortofoto_2021_wms = new ol.layer.Tile({
+          title: 'Ortofoto 2021',
+          visible: true,
+          baseLayer: true,
+          source: new ol.source.TileWMS({
+            url: 'https://idt2.regione.veneto.it/idt/geo/wms',
+            projection: UTM32proj,
+            params: {layers: 'rv:ortofoto_2021',format:'image/jpeg'}
+        })
+        })
+
+        var catasto_wms = new ol.layer.Tile({
+          title: 'catasto - servizio agenzia del territorio',
+          visible: false,
+          baseLayer: true,
+          source: new ol.source.TileWMS({
+              projection: ETRS89proj,
+              url: 'https://wms.cartografia.agenziaentrate.gov.it/inspire/wms/ows01.php',
+              params: {
+                  'LAYERS': 'CP.CadastralParcel,fabbricati,vestizioni',
+                  format:'image/png'
+              },
+              serverType: 'mapserver'
+          })
+      })
+
+        map.addLayer(ortofoto_2021_wms)
+        map.addLayer(ortofoto_2018_wms)
+        map.addLayer(catasto_wms)
+        map.addLayer(boundOverlay)
+        map.addLayer(selectionOverlay)
+
+      });
+
+      document.getElementById("seleziona_b").addEventListener('click', function() {
+        console.log('Button clicked');
+        map.removeInteraction(drawPolygon)
+        map.removeInteraction(drawLine)
+        document.getElementById("seleziona_p").classList.remove("checked");
+        document.getElementById("disegna_profilo").classList.remove("checked");
+        document.getElementById("download_profilo").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("profili_panel").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
+        if ( document.getElementById("seleziona_b").classList.contains("checked")) {
+            map.removeInteraction(dragBox)
+            document.getElementById("seleziona_b").classList.remove("checked");
+        } else {
+            map.addInteraction(dragBox)
+            document.getElementById("seleziona_b").classList.add("checked");
+        }
+      });
+
+      document.getElementById("seleziona_p").addEventListener('click', function() {
+        console.log('Button clicked');
+        map.removeInteraction(dragBox)
+        map.removeInteraction(drawLine)
+        document.getElementById("seleziona_b").classList.remove("checked");
+        document.getElementById("disegna_profilo").classList.remove("checked");
+        document.getElementById("download_profilo").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("profili_panel").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
+        if ( document.getElementById("seleziona_p").classList.contains("checked")) {
+            map.removeInteraction(drawPolygon)
+            document.getElementById("seleziona_p").classList.remove("checked");
+        } else {
+            map.addInteraction(drawPolygon)
+            document.getElementById("seleziona_p").classList.add("checked");
+        }
+      });
+
+      document.getElementById("disegna_profilo").addEventListener('click', function() {
+        console.log('Button clicked');
+        map.removeInteraction(dragBox)
+        map.removeInteraction(drawPolygon)
+        document.getElementById("seleziona_p").classList.remove("checked");
+        document.getElementById("seleziona_b").classList.remove("checked");
+        document.getElementById("download").classList.add("hidden");
+        document.getElementById("modello").classList.add("hidden");
+        document.getElementById("view").classList.add("hidden");
+        document.getElementById("licenza").classList.add("hidden")
+        if ( document.getElementById("disegna_profilo").classList.contains("checked")) {
+            map.removeInteraction(drawLine)
+            document.getElementById("disegna_profilo").classList.remove("checked");
+        } else {
+            map.addInteraction(drawLine)
+            document.getElementById("disegna_profilo").classList.add("checked");
+        }
+      });
+      
+      document.getElementById("download").addEventListener('click', function() {
+        window.open(risposta.output_laz, '_blank');
+      });
+      
+      document.getElementById("modello").addEventListener('click', function() {
+        window.open(risposta.output_dir+"/model/index.html", '_blank');
+      });
+      
+      document.getElementById("download_profilo").addEventListener('click', function() {
+        window.open(risposta.dxf, '_blank');
+      });
+      
+      document.getElementById("licenza").addEventListener('click', function() {
+        window.open('https://creativecommons.org/licenses/by/4.0/deed.it', '_blank');
+      });
+    </script>
+    
+    
+  </body>
+</html>

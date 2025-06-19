@@ -1,0 +1,126 @@
+{
+  "app": {
+    "title": "Rilievo 2023 del territorio comunale di Padova: DBT, DTM, DSM e Point Cloud",
+    "browserTitle": "Rilievo 2023",
+    "footerTextLeft": "<a href='https://rapper.comune.padova.it' target='_blank'>Settore Urbanistica e Servizi Catastali</a>",
+    "footerTextRight": "Comune di Padova",
+    "logo": "Logo"
+  },
+
+  "mapLayers": {
+    "wgu-drag-drop-layer" : {
+      "name": "Uploaded Data"
+    },
+    "Shops": {
+      "name": "Shops DaSchau"
+    },
+    "gas-wfs": {
+      "name": "Gas Stations WFS",
+      "attributions": "© <a href=\"https://www.openstreetmap.org/copyright\">OpenStreetMap</a> contributors."
+    },
+    "earthquakes": {
+      "name": "Earthquakes 2012 (Mag 5)",
+      "attributions": "U.S. Geological Survey"
+    },
+    "ahocevar-wms": {
+      "name": "Tiled WMS (ahocevar)"
+    },
+    "ahocevar-imagewms": {
+      "name": "Image WMS (ahocevar)"
+    },
+    "ahocevar-vectortiles": {
+      "name": "Vector Tile Layer"
+    },
+    "opentopomap": {
+      "name": "OpenTopoMap",
+      "attributions": "Map data: <a href=\"https://openstreetmap.org/copyright\">©OpenStreetMap</a>-contributors, SRTM | Map representation: © <a href=\"http://opentopomap.org/\">OpenTopoMap</a> (<a href=\"https://creativecommons.org/licenses/by-sa/3.0/\">CC-BY-SA</a>)"
+    },
+    "osm-bg": {
+      "name": "OpenStreetMap"
+    },
+    "dutch-nat-parks" : {
+      "name": "WFS (Dutch National Parks PDOK)",
+      "attributions": "<a href='https://www.pdok.nl' target='_blank'>PDOK</a> by Dutch Kadaster"
+    },
+    "pdok-natura2000-wms" : {
+      "name": "WMS - Natura 2000 Areas - PDOK",
+      "attributions": "<a href='https://www.pdok.nl' target='_blank'>PDOK</a> by Dutch Kadaster"
+    },
+    "pdok-lufo-wms" : {
+      "name": "WMS - Dutch Arial Map - PDOK",
+      "attributions": "<a href='https://www.pdok.nl' target='_blank'>PDOK</a> by Dutch Kadaster"
+    },
+    "brtachtergrondkaart" : {
+      "name": "WMTS - Topo Basemap - PDOK",
+      "attributions": "<a href='https://www.pdok.nl' target='_blank'>PDOK</a> by Dutch Kadaster"
+    },
+    "terrestris-osm-wms" : {
+      "name": "OSM WMS",
+      "attributions": "<a href='https://www.openstreetmap.org/copyright' target='_blank'>© OpenStreetMap-contributors</a>"
+    }
+  },
+
+  "wgu-helpwin": {
+    "title": "About",
+    "textTitle": "About Wegue",
+    "htmlContent": "<b>WebGIS with OpenLayers and Vue.js</b> Template and re-usable components for webmapping applications with OpenLayers and Vue.js",
+    "infoLinkUrl": "http://wegue.org/",
+    "infoLinkText": "More info"
+  },
+
+  "sample-module": {
+    "title": "Sample Module",
+    "text": "Hello Wegue"
+  },
+
+  "wgu-print": {
+    "title": "Stampa in pdf",
+    "subtitle": "Esporta la mappa in pdf con i seguenti parametri di stampa",
+    "dim": "Foglio",
+    "scales": [
+      1000000, 500000, 250000, 100000, 50000, 25000, 10000, 5000 , 2000, 1000, 500, 200
+    ],
+    "resolutions": [
+      72, 150, 200, 300
+    ],
+    "orientation": "Orientamento",
+    "portrait": "Verticale",
+    "landscape": "Orizzontale",
+    "resolution": "Risoluzione",
+    "scale": "Scala",
+    "exportClick": "Esporta pdf"
+  },
+
+  "wgu-dbtmanGetDXF": {
+    "title": "Estrazione DBT in DXF",
+    "selectionTitle": "Selezionare l'area di interesse",
+    "selectBox": "Finestra di selezione",
+    "selectPoly": "Poligono di selezione",
+    "download": "Scarica il DXF dell'area"
+  },
+
+  "wgu-getPointCloud": {
+    "title": "Estrazione di Point Cloud",
+    "selectionTitle": "Selezionare l'area di interesse",
+    "selectBox": "Finestra di selezione",
+    "selectPoly": "Poligono di selezione",
+    "download": "Scarica in formato .laz",
+    "model": "Esplora il modello 3d"
+  },
+
+  "wgu-profili": {
+    "title": "Estrazioni di profili da DTM e DSM",
+    "selectionTitle": "Tracciare una linea di sezione sulla mappa",
+    "download": "Scarica il profilo in formato .dxf"
+  },
+  
+  "wgu-start-menu": {
+    "title": "Rilievo 2023",
+    "abstract": "Applicazioni disponibili per l'estrazione, esportazione e validazione di dati relativi al Rilievo aerofotogrammetrico del 2023 (6 e 12 aprile 2023)"
+  },
+
+  "wgu-uploadAndValidate": {
+    "title": "Upload DXF e validazione DBT",
+    "selectBox": "Test disponibili"
+  }
+}

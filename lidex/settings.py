@@ -12,6 +12,8 @@ https://docs.djangoproject.com/en/4.2/ref/settings/
 
 from pathlib import Path
 
+import os
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent#.parent
 
@@ -126,10 +128,36 @@ STATICFILES_DIRS = [ BASE_DIR / "static","static/",]
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
-PDAL_COVERAGE_INDEX_PATH = "/coverage/index_utm.sqlite"
-PDAL_COVERAGE_INDEX_FORMAT = "SQLite"
-PDAL_COVERAGE_INDEX_LAYER = "pdal"
-PDAL_COVERAGE_INDEX_SRS = "EPSG:25832"
-PDAL_OUTPUT_DIR = "/output"
+LIDEX_COVERAGE_PATH = os.environ.get("LIDEX_COVERAGE_PATH", "")
+LIDEX_COVERAGE_INDEX = os.environ.get("LIDEX_COVERAGE_INDEX", "")
+LIDEX_COVERAGE_FILE_FILTER = os.path.join(LIDEX_COVERAGE_PATH, os.environ.get("LIDEX_COVERAGE_FILTER", ""))
+LIDEX_COVERAGE_INDEX_PATH = os.path.join(LIDEX_COVERAGE_PATH, LIDEX_COVERAGE_INDEX)
+LIDEX_COVERAGE_INDEX_FORMAT = os.environ.get("LIDEX_COVERAGE_INDEX_FORMAT", "")
+LIDEX_COVERAGE_INDEX_LAYER = os.environ.get("LIDEX_COVERAGE_INDEX_LAYER", "")
+LIDEX_COVERAGE_SRS = os.environ.get("LIDEX_COVERAGE_SRS", "")
+LIDEX_INTERFACE_SRS = os.environ.get("LIDEX_INTERFACE_SRS", "")
+LIDEX_OUTPUT_DIR = os.environ.get("LIDEX_OUTPUT_DIR", "")
+LIDEX_SUBPATH = os.environ.get("SITE_SUBPATH", "")
+LIDEX_DSM_PATH = os.path.join(LIDEX_COVERAGE_PATH, os.environ.get("LIDEX_DSM_FILE", ""))
+LIDEX_DTM_PATH = os.path.join(LIDEX_COVERAGE_PATH, os.environ.get("LIDEX_DTM_FILE", ""))
+LIDEX_PROFILE_SAMPLING = float(os.environ.get("LIDEX_PROFILE_SAMPLING", ""))
+LIDEX_PDAL_EXE = os.environ.get("LIDEX_PDAL_EXE", "")
+LIDEX_POTREECONVERTER_EXE = os.environ.get("LIDEX_POTREECONVERTER_EXE", "")
+
+#LIDEX_COVERAGE_PATH = "/coverage/alt"
+#LIDEX_COVERAGE_INDEX = "index.sqlite"
+#LIDEX_COVERAGE_FILE_FILTER = os.path.join(LIDEX_COVERAGE_PATH, "*.laz")
+#LIDEX_COVERAGE_INDEX_PATH = os.path.join(LIDEX_COVERAGE_PATH, LIDEX_COVERAGE_INDEX)
+#LIDEX_COVERAGE_INDEX_FORMAT = "SQLite"
+#LIDEX_COVERAGE_INDEX_LAYER = "pdal"
+#LIDEX_COVERAGE_SRS = "EPSG:32632"
+#LIDEX_INTERFACE_SRS = "EPSG:32632"
+#LIDEX_OUTPUT_DIR = "/output"
+#LIDEX_SUBPATH = ""
+#LIDEX_DSM_PATH = os.path.join(LIDEX_COVERAGE_PATH, "dtm.tif")
+#LIDEX_DTM_PATH = os.path.join(LIDEX_COVERAGE_PATH, "dtm.tif")
+#LIDEX_PROFILE_SAMPLING = 0.5
+#LIDEX_PDAL_EXE = '/opt/conda/bin/pdal'
+#LIDEX_POTREECONVERTER_EXE = "/opt/PotreeConverter/build/PotreeConverter"
 
 CORS_ALLOW_ALL_ORIGINS = True

@@ -1,0 +1,211 @@
+{
+"colorTheme": {
+  "dark": false, 
+  "themes": {   
+    "light": {  
+      "primary": "#af2622",
+      "onprimary": "#ffffff",
+      "secondary": "#ec483b",
+      "onsecondary": "#ffffff",
+      "error": "#ff6f00"
+    },
+    "dark": {   
+      "primary": "#3c4245",
+      "onprimary": "#dfcdc3",
+      "secondary": "#719192",
+      "onsecondary": "#a6e4e7",
+      "error": "#ff6f00"
+    }
+  }
+},
+
+  "logo": "",
+  "logoSize": 100,
+  "showCopyrightYear": true,
+
+  "lang": {
+    "supported": {
+      "en": "English",
+      "it": "Italiano"
+    },
+    "fallback": "it"
+  },
+
+  "mapZoom": 14,
+  "mapCenter": [724881,5031178],
+  "mapProjection": {
+    "code": "${LIDEX_INTERFACE_SRS}",
+    "units": "m"
+  },
+
+  "projectionDefs": [
+    [
+      "${LIDEX_INTERFACE_SRS}",
+      "${LIDEX_INTERFACE_DEF}"
+    ],
+    [
+      "${LIDEX_COVERAGE_SRS}",
+      "${LIDEX_COVERAGE_DEF}"
+    ]
+  ],
+
+  "mapLayers": [
+    {
+      "type": "OSM",
+      "lid": "osm-bg",
+      "isBaseLayer": true,
+      "visible": true,
+      "crossOrigin": "anonymous"
+    },
+    {
+      "type": "VECTOR",
+      "lid": "Coverage",
+      "url": "/lidex/coverage_layer/",
+      "formatConfig": {
+      },
+      "format": "GeoJSON",
+      "visible": true,
+      "selectable": false,
+      "projection": "${LIDEX_INTERFACE_DEF}",
+      "style": {
+        "strokeColor": "orange",
+        "strokeWidth": 4
+      }
+    }
+  ],
+  "modules": {
+    "wgu-helpwin": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "grain",
+      "draggable": true,
+      "visible": false,
+      "initPos": {
+        "left": 98,
+        "top": 74
+      },
+      "darkLayout": true
+    },
+    "wgu-start-menu": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-map-legend",
+      "draggable": true,
+      "visible": true,
+      "initPos": {
+        "left": 98,
+        "top": 74
+      },
+      "items": ["wgu-getPointCloud","wgu-profili"]
+    },
+    "wgu-getPointCloud": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "grain",
+      "draggable": true,
+      "initPos": {
+        "left": 610,
+        "top": 74
+      }
+    },
+    "wgu-profili": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-slope-uphill",
+      "draggable": true,
+      "initPos": {
+        "left": 610,
+        "top": 74
+      }
+    },
+    "wgu-print": {
+      "target": "toolbar",
+      "win": "floating",
+      "icon": "mdi-printer",
+      "draggable": true,
+      "initPos": {
+        "left": 8,
+        "top": 74
+      }
+    },
+    "wgu-layerlist": {
+      "target": "menu",
+      "icon": "layers",
+      "win": "floating",
+      "draggable": false
+    },
+    "wgu-infoclick": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "info",
+      "draggable": false,
+      "initPos": {
+        "left": 8,
+        "top": 74
+      }
+    },
+    "wgu-measuretool": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "photo_size_select_small",
+      "draggable": false,
+      "strokeColor": "#c62828",
+      "fillColor": "rgba(198,40,40,0.2)",
+      "sketchStrokeColor": "rgba(198,40,40,0.8)",
+      "sketchFillColor": "rgba(198,40,40,0.1)",
+      "sketchVertexStrokeColor": "#c62828",
+      "sketchVertexFillColor": "rgba(198,40,40,0.2)"
+    },
+    "wgu-zoomtomaxextent": {
+      "target": "toolbar",
+      "darkLayout": true
+    },
+    "wgu-geocoder": {
+      "target": "toolbar",
+      "darkLayout": true,
+      "minChars": 2,
+      "queryDelay": 200,
+      "selectZoom": 16,
+      "debug": false,
+      "placeHolder": "Search address",
+      "provider": "osm",
+      "providerOptions": {
+        "lang": "it-IT",
+        "countrycodes": "it",
+        "limit": 10
+      }
+    },
+    "wgu-geolocator": {
+      "target": "toolbar",
+      "darkLayout": true
+    },
+    "wgu-attributetable": {
+      "target": "menu",
+      "win": "floating",
+      "icon": "table_chart",
+      "syncTableMapSelection": true
+    }
+  },
+  "mapGeodataDragDop": {
+    "formats": [
+      "GeoJSON",
+      "KML"
+    ],
+    "zoomToData": true,
+    "replaceData": true,
+    "displayInLayerList": true,
+    "layerName": "Uploaded Data"
+  },
+  "permalink": {
+    "location": "hash",
+    "layers": true,
+    "extent": true,
+    "projection": "$LIDEX_INTERFACE_SRS",
+    "paramPrefix": "",
+    "precision": 2,
+    "history": true
+  },
+  "overviewMap": {
+    "visible": false
+  }
+}
