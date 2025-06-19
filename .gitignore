@@ -1,8 +1,11 @@
 *.pyc
 __pycache__
+db.sqlite3
+coverage/*
 data/*
 mapproxy/*
 wegue_custom_app/wegue_common/*
 wegue/*
 .env
 wegue_custom_app/wegue_custom/static/app-conf.json
+output/*
