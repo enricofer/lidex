@@ -167,12 +167,13 @@ def raster_clip(request):
 @csrf_exempt
 def raster_sample(request):
   if request.method == 'GET':
+    support = request.GET.get('support', 'h,dtm,dsm')
     p_raw = request.GET.get('sample')
     p = [float(c) for c in p_raw.split(',')]
     res = {}
     if p:
       res["point"] = p
-      for supporto in ['h','dtm','dsm']:
+      for supporto in support.split(","):
         ds = gdal.Open("/coverage/%s.tif" % supporto)
         res[supporto] = extract_point_from_raster(ds,p)
       print (res)
@@ -188,6 +189,7 @@ def output_file(request,dir,file):
 @csrf_exempt
 def viewshed(request):
   observation = request.GET.get("observation")
+  z = request.GET.get("z")
   if not observation or len(observation.split(",")) != 2:
     return JsonResponse({
         "res": "KO",
@@ -198,10 +200,12 @@ def viewshed(request):
      
   x = observation.split(",")[0]
   y = observation.split(",")[1]
+  oz = z.split(",")[0]
+  tz = z.split(",")[1]
   dsm_ds = gdal.Open(DSM_GBO_PATH)
   observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]) + 1.00)
   print ("VIEWSHED observation", x, y)
-  cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
+  cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz {oz} -tz {tz} -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
   #cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f PNG -co WORLDFILE=YES {dsm} {output}"""
 
   output_dir = os.path.join(settings.PDAL_OUTPUT_DIR,uuid.uuid4().hex)
@@ -214,6 +218,8 @@ def viewshed(request):
      output = viewshed_path,
      x = x,
      y = y,
+     oz = oz,
+     tz = tz,
      r = 500
   )
 
