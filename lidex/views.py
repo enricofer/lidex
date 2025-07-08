@@ -42,7 +42,9 @@ dxfcols = {
 
 decode = {
     "dtm": settings.LIDEX_DTM_PATH,
+    "dtm_gbo": settings.LIDEX_DTM_PATH.replace(".tif", "_gbo.tif"),
     "dsm": settings.LIDEX_DSM_PATH,
+    "dsm_gbo": settings.LIDEX_DSM_PATH.replace(".tif", "_gbo.tif"),
 }
 
 def get_size(start_path):
@@ -162,8 +164,10 @@ def inside_coverage(p):
 
 def extract_point_from_raster(data_source, p, band_number=1):
     """Return floating-point value that corresponds to given point."""
-    if not inside_coverage(p):
-       return
+    
+    #if not inside_coverage(p):
+    #   return
+    
     # Convert point co-ordinates so that they are in same projection as raster
     #point_sr = point.GetSpatialReference()
     #raster_sr = osr.SpatialReference()
@@ -184,7 +188,8 @@ def extract_point_from_raster(data_source, p, band_number=1):
     try:
       structval = band.ReadRaster(px, py, 1, 1, buf_type=gdal.GDT_Float32)
       result = struct.unpack('f', structval)[0]
-    except:
+    except Exception as E:
+       print("extract exception",E)
        result = float('nan')
     if result == band.GetNoDataValue():
         result = float('nan')
@@ -288,8 +293,9 @@ def viewshed(request):
   y = observation.split(",")[1]
   oz = z.split(",")[0]
   tz = z.split(",")[1]
-  dsm_ds = gdal.Open(DSM_GBO_PATH)
-  observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]) + 1.00)
+  dsm_ds = gdal.Open(decode["dsm_gbo"]) #gdal.Open(DSM_GBO_PATH)
+  print("dettagli viewshed", x,y,oz,tz,decode["dsm_gbo"], extract_point_from_raster(dsm_ds,[float(x),float(y)]))
+  observation += ",{0:.2f}".format(extract_point_from_raster(dsm_ds,[float(x),float(y)]))
   print ("VIEWSHED observation", x, y)
   cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz {oz} -tz {tz} -md {r} -f GTiff -co COMPRESS=DEFLATE -co PREDICTOR=2 -co ZLEVEL=9 {dsm} {output}"""
   #cmd_template = """/opt/conda/bin/gdal_viewshed -b 1 -ox {x} -oy {y} -oz 1.0 -tz 1.0 -md {r} -f PNG -co WORLDFILE=YES {dsm} {output}"""
@@ -300,7 +306,7 @@ def viewshed(request):
   #viewshed_path = os.path.join(output_dir,"viewshed.png")
 
   cmd = cmd_template.format(
-     dsm = settings.LIDEX_DSM_PATH,
+     dsm = decode["dsm_gbo"],
      output = viewshed_path,
      x = x,
      y = y,
@@ -326,49 +332,6 @@ def viewshed(request):
       "punto_di_osservazione": observation,
       "output": viewshed_path,
   })
-
-
-
-def viewshed_pythonapi():
-  try:
-    ds = gdal.Open(LIDEX_DSM_PATH)
-    band= ds.GetRasterBand(1)
-    gdal.UseExceptions()
-    res = gdal.ViewshedGenerate(
-        srcBand = band,
-        driverName = 'GTiff',
-        targetRasterName = viewshed_path,
-        creationOptions = [], #['COMPRESS=DEFLATE', 'PREDICTOR=2', 'ZLEVEL=9'],
-        observerX = float(x),
-        observerY = float(y),
-        observerHeight = 1,
-        targetHeight = 1,
-        visibleVal = 255.0,
-        invisibleVal = 0.0,
-        outOfRangeVal = 0.0,
-        noDataVal = 0.0,
-        dfCurvCoeff = 1.0,
-        mode = 1,
-        maxDistance = 500.0) 
-
-    
-
-    return JsonResponse({
-        "res": "OK",
-        "punto_di_osservazione": observation,
-        "output": viewshed_path,
-    })
-
-  except Exception as E:
-      return JsonResponse({
-          "res": "KO",
-          "ds": str(ds),
-          "band": str(band),
-          "cmd": cmd_template,
-          "errore": str(E),
-          "punto_di_osservazione": observation,
-          "output": None,
-      })
 
     
 @csrf_exempt
