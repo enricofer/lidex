@@ -431,6 +431,8 @@ def punti(request):
 
       res2 = potreeConvert(output_laz)
 
+      clean_local_extlibs(output_dir)
+
       metadata = {
         "result": res,
         "error": None,
@@ -459,3 +461,18 @@ def punti(request):
       "result": None,
       "error": "NO extent data",
     })
+
+def clean_local_extlibs(path):
+  with open(os.path.join(path,'model','index.html'), 'r') as infile:
+    html_txt = infile.read()
+    
+  html_txt = html_txt.replace('./libs',settings.LIDEX_SUBPATH + settings.STATIC_URL + 'lidex/libs')
+  print(html_txt)
+
+  with open(os.path.join(path,'model','index.html'), 'w') as outfile:
+      outfile.write(html_txt)
+  
+  shutil.rmtree(os.path.join(path,'model','libs'))
+
+  
+  
