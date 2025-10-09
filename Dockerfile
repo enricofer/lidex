@@ -2,14 +2,14 @@ FROM ubuntu:20.04
 #VOLUME ["/input", "/output"]
 ENV PYTHONDONTWRITEBYTECODE=1
 ENV PYTHONUNBUFFERED=1
-#ENV HTTPS_PROXY=http://172.20.0.252:3128
-#ENV HTTP_PROXY=http://172.20.0.252:3128
+ENV HTTPS_PROXY=http://172.20.0.252:3128
+ENV HTTP_PROXY=http://172.20.0.252:3128
 ARG DEBIAN_FRONTEND=noninteractive
 
 RUN apt-get update && apt-get install -y git cmake build-essential wget
 
-#RUN git config --global http.proxy http://172.20.0.252:3128
-#RUN git config --global https.proxy http://172.20.0.252:3128
+RUN git config --global http.proxy http://172.20.0.252:3128
+RUN git config --global https.proxy http://172.20.0.252:3128
 
 RUN apt-get update && apt-get install -y \
 libtiff-dev libgeotiff-dev libgdal-dev \
@@ -43,6 +43,8 @@ RUN wget --quiet https://repo.anaconda.com/miniconda/Miniconda3-latest-Linux-x86
 ENV PATH=$CONDA_DIR/bin:$PATH
 RUN conda config --add channels conda-forge
 RUN conda config --set channel_priority flexible
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/main
+RUN conda tos accept --override-channels --channel https://repo.anaconda.com/pkgs/r
 RUN conda update -n base --all
 RUN conda install -n base mamba
 
@@ -58,6 +60,7 @@ RUN mamba install django
 RUN mamba install affine
 RUN mamba install ezdxf==1.2.0
 RUN mamba install django-cors-headers
+RUN mamba install gunicorn
 ENV PROJ_LIB=/opt/conda/share/proj
 
 WORKDIR /app
