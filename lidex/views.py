@@ -190,9 +190,9 @@ def extract_point_from_raster(data_source, p, band_number=1):
       result = struct.unpack('f', structval)[0]
     except Exception as E:
        print("extract exception",E)
-       result = float('nan')
+       result = None #float('nan')
     if result == band.GetNoDataValue():
-        result = float('nan')
+        result = None #float('nan')
     return result
 
 
@@ -259,16 +259,25 @@ def raster_clip(request):
 def raster_sample(request):
   if request.method == 'GET':
     support = request.GET.get('support', 'h,dtm,dsm')
+    support = support.split(',')
     p_raw = request.GET.get('sample')
     p = [float(c) for c in p_raw.split(',')]
     res = {}
     if p:
       res["point"] = p
-      for asset_name, asset_path in decode.items(): #h?
-        ds = gdal.Open(asset_path)
-        res[asset_name] = extract_point_from_raster(ds, p)
-        print (asset_path)
-      res['h'] = res['dsm'] - res['dtm']
+      #for asset_name, asset_path in decode.items(): 
+      for s in support:
+        asset_name = s
+        asset_path = decode.get(s)
+        if asset_path:
+          ds = gdal.Open(asset_path)
+          s = extract_point_from_raster(ds, p)
+          if s:
+            res[asset_name] = s
+      
+      for key, value in res.items():
+         if not value:
+            del res[key]
       return JsonResponse(res)
     
 @csrf_exempt
